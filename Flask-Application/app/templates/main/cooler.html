@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section id="cooler">
+    <div class="container py-5 mx-auto">
+        <p>Cooler Window</p>
+            <form method="POST">
+                <div class="row">
+                        <div class="col-4 text-right">
+                            <p>Auto</p>
+                        </div>
+                        <div class="col-4 text-right">
+                            <input type="radio" id="autoOn" value={{autoOn}}>
+                            <label for="autoOn">On</label><br>
+                    
+                        </div>
+                        <div class="col-4 text-left">
+                            <input type="radio" id="autoOff" value="male">
+                            <label for="autoOff">Off</label><br> 
+                        </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 text-right">
+                        <p>Fan</p>
+                    </div>
+                    <div class="col-4 text-right">
+                        <input type="radio" id="fanOn" value={{fanOn}}>
+                        <label for="fanOn">On</label><br>
+                    </div>
+                    <div class="col-4 text-left">
+                        <input type="radio" id="fanOff" value="male">
+                        <label for="fanOff">Off</label><br>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 text-right">
+                        <p>Pump</p>
+                    </div>
+                    <div class="col-4 text-right">
+                        <input type="radio" id="pumpOn" value={{pumpOn}}>
+                        <label for="pumpOn">On</label><br>
+                    </div>
+                    <div class="col-4 text-left">
+                        <input type="radio" id="pumpOff" value="male">
+                        <label for="pumpOff">Off</label><br>
+                    </div>
+                </div>
+            </form>
+        <div class="row">
+            <div class="col">
+                <a href="{{url_for('index')}}" class="btn-success">Done</a>
+                <a href="{{url_for('index')}}" class="btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+{% endblock %}
+

@@ -5,12 +5,12 @@
     <div class="container py-5 mx-auto">
         <div class="row">
             <div class="col-6">
-                <a class="btn btn-primary py-5 mb-2 btn-block" href="">Cooler</a>
-                <a class="btn btn-info py-5 mt-2 btn-block" href="">Interval</a>
+                <a href="{{url_for('cooler_window')}}" class="btn btn-primary homeButton mb-2 btn-block">Cooler</a>
+                <a href="{{url_for('interval_window')}}" class="btn btn-info homeButton mt-2 btn-block">Interval</a>
             </div>
             <div class="col-6">
-                <a class="btn btn-secondary py-5 mb-2 btn-block" href="">Timed</a>
-                <a class="btn btn-success py-5 mt-2 btn-block" href="">Log</a>  
+                <a href="{{url_for('timer_window')}}" class="btn btn-secondary homeButton mb-2 btn-block" >Timer</a>
+                <a href="{{url_for('log_window')}}" class="btn btn-success homeButton mt-2 btn-block" >Log</a>  
             </div>
         </div>
     </div>
