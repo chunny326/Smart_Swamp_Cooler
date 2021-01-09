@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section id="interval">
+    <div class="container py-5 mx-auto">
+        <div class="row">
+            <div class="col">
+                <p>Interval Window</p>
+                <a href="{{url_for('new_interval_window')}}">Add +</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col text-right">
+                <a href="{{url_for('index')}}" class="btn-secondary">Back</a>
+            </div>
+        </div>
+        
+    </div>
+</section>
+
+
+{% endblock %}
+
