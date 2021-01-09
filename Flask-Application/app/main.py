@@ -8,7 +8,7 @@ def index():
     return render_template('main/index.html', title='Index')
 
 @app.route("/log")
-def chart():
+def log_window():
     labels = ["January","February","March","April","May","June","July","August"]
     values = [10,9,8,7,6,4,7,8]
     # make a 'JSON' dictonary
