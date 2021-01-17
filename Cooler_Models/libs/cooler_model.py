@@ -12,6 +12,8 @@ DOI: 10.21608/jesaun.2012.114509
 Waleed A Abdel-FadeelWaleed A Abdel-FadeelSoubhi A. Hassanein
 """
 
+import numpy as np
+
 def c2k(c):
     ''' Celcius to Kelvin '''
     return c+273
@@ -29,11 +31,18 @@ def c2f(c):
     return (c)*9/5 + 32
 
 def U(ta, tw, p=1013.25):
-    ''' ta - ambient temperature kelvin,
-        tw - wet bulb temperature kelvin,
-        p - pressure millibars,
-        returns relative humidity in decimal
-        '''
+    ''' 
+    Parameters
+    ----------
+    ta : ambient temperature kelvin
+    tw : wet bulb temperature kelvin
+    p : pressure millibars
+
+    Returns
+    ----------
+    relative humidity in decimal
+    
+    '''
     a =-4.9283
     b= -2937.4
     c= 23.5518
@@ -43,6 +52,32 @@ def U(ta, tw, p=1013.25):
     rh = 10**(-(c + b/ta )) * ta**(-a) * (
          10**(  c + b/tw)   * tw**( a) - (f+g*tw) * p * (ta-tw))
     return(rh)
+
+            
+def saturation_density(T):
+    '''
+    Parameters
+    ----------
+    T : Temperature in kelvin
+    
+    Returns
+    -------
+    Saturation density in kg/m**3
+    '''
+    coeff = [0.000731, -0.6195, 175.5, -16606]
+    return np.polyval(coeff, T)/1000
+    
+
+def calculate_enthalpy(T, rh):
+    ''' T - temperature kelvin,
+    rh - relative humidy %
+    returns kJ/kg
+    '''
+    c_pa = 1.006 # kJ/kg Kelvin
+    c_pw = 1.86  # kJ/kg Kelvin
+    h_we = 2501  # kJ/kg
+    # 0.7180
+    return c_pa * k2c(T) + (c_pw * k2c(T) + h_we) * rh /100
 
 def calculate_t_wet(t_amb, rh):
     ''' t_amb - ambient temperature celcius, rh - relative humidity %
@@ -102,8 +137,8 @@ def unitTest_outlet_temp( efficiency = 0.75 ):
             print('\t{:.0f}'.format(c2f(t_exh) ), end='')
         print()
             
-            
-            
+
+
             
             
             
