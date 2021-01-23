@@ -1,6 +1,7 @@
 import mysql.connector
 import sys
 import json
+import re
 import time
 import serial
 import RPi.GPIO as GPIO
@@ -8,12 +9,16 @@ from datetime import datetime
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
+# unique IDs for Zigbee sensor nodes
+ROOF_SENSOR_ID = "0013a200Ac21216"
+HOME_SENSOR_ID = "0013a200Ac1f102"
+
 # ---------------------- Pi 4 Serial Functionality ---------------------- # 
 # 
 # Setup for Serial port to match Zigbee protocol
 ser = serial.Serial(
     port = '/dev/ttyS0',
-    baudrate = 115200,
+    baudrate = 57600,
     parity = serial.PARITY_NONE,
     stopbits = serial.STOPBITS_ONE,
     bytesize = serial.EIGHTBITS,
@@ -79,35 +84,43 @@ SQL_SELECT_DATA = "SELECT * FROM sensor_data"
 # Insert new row of Sensor Data
 SQL_INSERT_DATA = """
  INSERT INTO sensor_data (sensor_id, timestamp, temperature, humidity)
- VALUES (%s, UTC_TIMESTAMP(), %s, %s)
+ VALUES (%s, NOW(), %s, %s)
 """
 
-# Maps database data to cooler object
+# Select all data from given sensor and interval (# of days previous)
+SQL_SELECT_SENSOR_DATA = """
+  SELECT *
+  FROM sensor_data
+  WHERE sensor_id=%s
+  AND timestamp >= NOW() - INTERVAL %s DAY
+"""
+
+# Maps database data to sensor_data object
 def map_to_object(data):
   try:
     # assign database fields to object
-    cooler.id                      = (data["id"])
-    cooler.sensor_id               = (data["sensor_id"])
-    cooler.timestamp               = str(data["timestamp"])
-    cooler.temperature             = (data["temperature"])
-    cooler.humidity                = (data["humidity"])
+    sensor_data.id                      = (data["id"])
+    sensor_data.sensor_id               = (data["sensor_id"])
+    sensor_data.timestamp               = str(data["timestamp"])
+    sensor_data.temperature             = (data["temperature"])
+    sensor_data.humidity                = (data["humidity"])
   
   except Exception as ex:
-    print("Error mapping database data to cooler object")
+    print("ERROR: Error mapping database data to sensor_data object")
     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
     message = template.format(type(ex).__name__, ex.args)
     print(message)
-    return cooler 
+    return sensor_data 
   
-  return cooler
+  return sensor_data
 
 # Read out all entries from the databse
-def read_db():
+def read_all_db():
   mycursor = smartswampcooler_db.cursor()
-  #params = (unitID,)
-  mycursor.execute(SQL_SELECT_DATA) #, params)
-
-  row_headers = [x[0] for x in mycursor.description] # this will extract row headers
+  mycursor.execute(SQL_SELECT_DATA)
+  
+  # this will extract row headers
+  row_headers = [x[0] for x in mycursor.description] 
   myresult = mycursor.fetchall()
 
   # for x in myresult:
@@ -125,77 +138,124 @@ def read_db():
   # print out all json data entries
   for i in range(len(data)):
       print(data[i])
-      cooler = map_to_object(data[i])
+      sensor_data = map_to_object(data[i])
   
-  return cooler
+  return sensor_data
+
+# Read named sensor entries from database
+def read_sensor_db(sensor_name="", days=0):
+  mycursor = smartswampcooler_db.cursor()
+
+  if sensor_name == "roof":
+    params = (ROOF_SENSOR_ID, days,)
+  elif sensor_name == "home":
+    params = (HOME_SENSOR_ID, days,)
+  else:
+    print("ERROR: Invalid sensor name: {}".format(sensor_name))
+    print("Specify valid sensor name: 'roof' or 'home'\n")
+    return -1
+  
+  if days < 1:
+    print("ERROR: Specify number of days for sensor data >1\n")
+    
+  mycursor.execute(SQL_SELECT_SENSOR_DATA, params)
+  
+  # this will extract row headers
+  row_headers = [x[0] for x in mycursor.description] 
+  myresult = mycursor.fetchall()
+
+  json_data = []
+  for result in myresult:
+    json_data.append(dict(zip(row_headers,result)))
+
+  data = json.dumps(json_data, indent=4, sort_keys=True, default=str)
+  data = json.loads(data)
+  
+  print("Displaying {} sensor data over last {} days: ".format(sensor_name, days))
+  # print out all json data entries
+  for i in range(len(data)):
+      print(data[i])
+      sensor_data = map_to_object(data[i])
+  
+  return sensor_data
 
 # Insert new sensor data to the database
-def write_db(cooler):
+def write_db(sensor_data):
   print("Inserting new sensor data...")
 
   mycursor = smartswampcooler_db.cursor()
 
-  params = (cooler.sensor_id, cooler.temperature, cooler.humidity)
+  params = (sensor_data.sensor_id, sensor_data.temperature, sensor_data.humidity,)
 
   mycursor.execute(SQL_INSERT_DATA, params)
   smartswampcooler_db.commit()
 
-  print(mycursor.rowcount, "record(s) affected")
+  print("{} record(s) affected".format(mycursor.rowcount))
+  
+# Convert raw XBEE data to appropriate database entry
+def xbee_to_object(xb_raw_data):
+  # format the raw XBEE data to be able to read into json.loads
+  xb_data = xb_raw_data.replace(": ", ': "').replace(", ", '", ')\
+            .replace("}", '"}').replace("'", '"').replace('""', '"')\
+            .replace('"b"', '').replace('}",', "},")\
+            .replace('\\x', '').replace('eui64": ', 'eui64": "')
 
-def xbee_to_object(xb_data):
-    # convert xb byte data to a string
-    xb_string = str(xb_data, "utf-8")
-    xb_dict = json.loads(xb_string) 
+  # convert XBEE data to Python dictionary
+  xb_dict = json.loads(xb_data)
 
-    # check if temperature and humidity are valid values
-    # if !isinstance(xb_dict["Temperature"], float) or 
-    #    !isinstance(xb_dict["Humidity']"], float):
-    #    print("Sensor readings are invalid values\n")
+  # check sensor unique 64-bit identifier
+  # check for ROOF, HOME, or UNKNOWN sensor
+  if xb_dict["sender_eui64"] == ROOF_SENSOR_ID:
+      sensor_id = xb_dict["sender_eui64"]
+  elif xb_dict["sender_eui64"] == HOME_SENSOR_ID:
+      sensor_id = xb_dict["sender_eui64"]
+  else: 
+      print("ERROR: Unrecognized Zigbee sensor id.\n")
+      print("Unknown id: {}\n".format(xb_dict["sender_eui64"]))
+      return -1
 
-    # check sensor unique 64-bit identifier
-    # 0 if inside, 1 if outside
-    if xb_dict["sender_eui64"] == "\x00\x13\xa2\x00A\xc2\x12\x16":
-        sensor_id = 0
-    # TODO: add in outside 64-bit identifier
-    else if xb_dict["sender_eui64" == "\x..."]:
-        sensor_id = 1
-    else 
-        print("Unrecognized Zigbee sensor id.\n")
-        return -1
-    
-    cooler = SensorData(id=7, sensor_id=sensor_id, 
-                        temperature=xb_dict["Temperature"],
-                        humidity=xb_dict["Humidity"])
-    return cooler
+  # return formatted sensor data for db entry
+  sensor_data = SensorData(sensor_id=sensor_id, 
+                      temperature=xb_dict["payload"]["Temperature"],
+                      humidity=xb_dict["payload"]["Humidity"])
+  return sensor_data
+
+# print out the contents of the SensorData class object
+def display_sensor_data(sensor_data):
+  print("Sensor ID: '{}', Temperature: '{}', Humidity: '{}'".format(\
+      sensor_data.sensor_id, sensor_data.temperature, sensor_data.humidity))
 
 # ---------------------------------------------------------------------- #
 if __name__== "__main__":
-  # verify accuracy of timestamp inputs
-  # curr_time = datetime.datetime.utcnow()
-  # print curr_time
-
   # verify writing to the database with SensorData class and db functions above
-  # cooler = SensorData()
-  # cooler = read_db()
+  # sensor_data = SensorData()
+  # sensor_data = read_all_db()
   # new_data = SensorData(id="7", sensor_id="1", temperature=10.1, humidity=150.2)
   # write_db(new_data)  
-  # read_db()
+  # read_all_db()
 
-  while(1):  
-    # check contents of the database
-    cooler = read_db()
+  # check contents of the database
+  # sensor_data = SensorData()
+  # sensor_data = read_all_db()
+  while(1):    
+    raw_xb_data = wait_for_serial_response(30)
 
-    xb = wait_for_serial_response(30)
-
-    if xb != "":
-        sensor_db_entry = xbee_to_object(xb)
-        print(sensor_db_entry)
-        # write_db(sensor_db_entry)
+    if raw_xb_data != "":
+        sensor_data = SensorData()
+        sensor_data = xbee_to_object(raw_xb_data)
+        display_sensor_data(sensor_data)
+        write_db(sensor_data)
+        read_sensor_db(sensor_name="roof", days=2)
+        
+        # check updated database contents
+        # read_all_db()
 
     # flush serial input buffer and reopen port
     reset_serial_port()
   
-    # check updated database contents
-    # read_db()
-
-    print("Finished")
+    print("Finished\n")
+    time.sleep(5)
+    
+    # extract all db entries for given sensor
+    # read_sensor_db(sensor_name="roof")
+    # read_sensor_db(sensor_name="home")

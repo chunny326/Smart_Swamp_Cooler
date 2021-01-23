@@ -21,7 +21,7 @@ GPIO.setmode(GPIO.BCM)
 # Setup Serial
 ser = serial.Serial(
     port = '/dev/ttyS0',
-    baudrate = 115200,
+    baudrate = 57600,
     parity = serial.PARITY_NONE,
     stopbits = serial.STOPBITS_ONE,
     bytesize = serial.EIGHTBITS,
