@@ -1,3 +1,29 @@
+"""
+Jayden Smith
+
+Last Modified: January 25, 2021
+
+ECE 4020 - Senior Project II
+
+Main script for SmartSwampCooler project
+
+This code runs on the Raspberry Pi 4 Model B acting as the master
+controller. 
+
+It reads data from the Zigbee coordinator receiving data it
+collects from the sensor router nodes. This serial communication is done
+through the serial UART port of the Pi. Functionality is provided for 
+serial settings, opening/closing the port, resetting the buffer, and 
+reading data any time a message is received.
+
+The raw data received from the Zigbee coordinator is decoded and interpreted.
+This data is sorted into key-value pairs that are used to create SensorData 
+objects. These objects are used as entries into a PHPMyAdmin database using 
+MySQL queries. Functionality is provided to read out the data from the database
+for the whole database, or for any sensor node and for any number of days in the
+past.
+"""
+
 import mysql.connector
 import sys
 import json
