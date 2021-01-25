@@ -231,9 +231,7 @@ def xbee_to_object(xb_raw_data):
 
   # check sensor unique 64-bit identifier
   # check for ROOF, HOME, or UNKNOWN sensor
-  if xb_dict["sender_eui64"] == ROOF_SENSOR_ID:
-      sensor_id = xb_dict["sender_eui64"]
-  elif xb_dict["sender_eui64"] == HOME_SENSOR_ID:
+  if xb_dict["sender_eui64"] == ROOF_SENSOR_ID or xb_dict["sender_eui64"] == HOME_SENSOR_ID:
       sensor_id = xb_dict["sender_eui64"]
   else: 
       print("ERROR: Unrecognized Zigbee sensor id.\n")
