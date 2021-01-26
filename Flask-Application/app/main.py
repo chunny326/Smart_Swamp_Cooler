@@ -17,10 +17,12 @@ def log_window():
 
 @app.route('/cooler')
 def cooler_window():
-    autoOn = True
+    autoOn = False
+    manualOn = True
     fanOn = False
     pumpOn = False
-    return render_template('main/cooler.html', autoOn=autoOn, fanOn=fanOn, pumpOn=pumpOn)
+
+    return render_template('main/cooler.html', autoOn=autoOn, manualOn=manualOn, fanOn=fanOn, pumpOn=pumpOn)
 
 @app.route('/interval')
 def interval_window():

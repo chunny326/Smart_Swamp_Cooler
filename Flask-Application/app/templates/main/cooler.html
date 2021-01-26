@@ -3,55 +3,57 @@
 {% block content %}
 <section id="cooler">
     <div class="container py-5 mx-auto">
-        <p>Cooler Window</p>
-            <form method="POST">
-                <div class="row">
-                        <div class="col-4 text-right">
-                            <p>Auto</p>
-                        </div>
-                        <div class="col-4 text-right">
-                            <input type="radio" id="autoOn" value={{autoOn}}>
-                            <label for="autoOn">On</label><br>
-                    
-                        </div>
-                        <div class="col-4 text-left">
-                            <input type="radio" id="autoOff" value="male">
-                            <label for="autoOff">Off</label><br> 
-                        </div>
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-2 col-3 col-lg-1 text-left">
+                    <h6>Auto</h6>
                 </div>
-
-                <div class="row">
-                    <div class="col-4 text-right">
-                        <p>Fan</p>
-                    </div>
-                    <div class="col-4 text-right">
-                        <input type="radio" id="fanOn" value={{fanOn}}>
-                        <label for="fanOn">On</label><br>
-                    </div>
-                    <div class="col-4 text-left">
-                        <input type="radio" id="fanOff" value="male">
-                        <label for="fanOff">Off</label><br>
+                <div class="col-md-3 col-6 text-left">
+                    <div class="toggles">
+                        <input type="checkbox" name="auto" id="auto" class="ios-toggle checkbox" value="{{autoOn}}" {{'checked="checked"' if autoOn else ""}}/>
+                        <label for="auto" class="checkbox-label"></label>
                     </div>
                 </div>
-
-                <div class="row">
-                    <div class="col-4 text-right">
-                        <p>Pump</p>
-                    </div>
-                    <div class="col-4 text-right">
-                        <input type="radio" id="pumpOn" value={{pumpOn}}>
-                        <label for="pumpOn">On</label><br>
-                    </div>
-                    <div class="col-4 text-left">
-                        <input type="radio" id="pumpOff" value="male">
-                        <label for="pumpOff">Off</label><br>
+            </div>
+            <div class="row">
+                <div class="col-md-2 col-3 col-lg-1 text-left">
+                    <h6>Manual</h6>
+                </div>
+                <div class="col-md-3 col-6 text-left">
+                    <div class="toggles">
+                        <input type="checkbox" name="manual" id="manual" class="ios-toggle checkbox" value="{{manualOn}}" {{'checked="checked"' if manualOn else ""}}/>
+                        <label for="manual" class="checkbox-label"></label>
                     </div>
                 </div>
-            </form>
+            </div>
+            <div class="row pt-3">
+                <div class="col-sm-1 col-2"></div>
+                <div class="col-md-1 col-2 text-left">
+                    <h6>Fan</h6>
+                </div>
+                <div class="col-md-4 col-6 text-left">
+                    <div class="toggles">
+                        <input type="checkbox" name="fan" id="fan" class="ios-toggle checkbox small-checkbox" value="{{fanOn}}" {{'checked="checked"' if fanOn else ""}}/>
+                        <label for="fan" class="checkbox-label checkbox-label-small"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-1 col-2"></div>
+                <div class="col-md-1 col-2 text-left">
+                    <h6>Pump</h6>
+                </div>
+                <div class="col-md-4 col-6 text-left">
+                    <div class="toggles">
+                        <input type="checkbox" name="pump" id="pump" class="ios-toggle checkbox" value="{{pumpOn}}" {{'checked="checked"' if pumpOn else ""}}/>
+                        <label for="pump" class="checkbox-label checkbox-label-small"></label>
+                    </div>
+                </div>
+            </div>
+        </form>
         <div class="row">
             <div class="col">
-                <a href="{{url_for('index')}}" class="btn-success">Done</a>
-                <a href="{{url_for('index')}}" class="btn-secondary">Cancel</a>
+                <a href="{{url_for('index')}}" class="btn-secondary">Back</a>
             </div>
         </div>
     </div>
