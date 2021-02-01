@@ -1,21 +1,56 @@
-{% extends "base.html" %}
-
-{% block content %}
-<section id="home">
-    <div class="container py-5 mx-auto">
-        <div class="row">
-            <div class="col-6">
-                <a href="{{url_for('cooler_window')}}" class="btn btn-primary homeButton mb-2 btn-block">Cooler</a>
-                <a href="{{url_for('interval_window')}}" class="btn btn-info homeButton mt-2 btn-block">Interval</a>
-            </div>
-            <div class="col-6">
-                <a href="{{url_for('timer_window')}}" class="btn btn-secondary homeButton mb-2 btn-block" >Timer</a>
-                <a href="{{url_for('log_window')}}" class="btn btn-success homeButton mt-2 btn-block" >Log</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-{% endblock %}
-
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Sensor Data </title>
+    <link rel="stylesheet" href='../static/style.css'/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        body {
+	    text-align: center;
+	}
+        #g1,
+        #g2 {
+            width: 200px;
+	    height: 160px;
+	    display: inline-block;
+	    margin: 1em;
+	}
+    </style>
+</head>
+<body>
+    <h1> Sensor Data </h1>
+    <div id="g2"></div>
+    <div id="g1"></div>
+    <hr>
+	<h3> Last Roof Sensor Reading: {{ time_roof }} ==> <a href="/"class="button">REFRESH</a></h3>
+	<h3> Last Inside Sensor Reading: {{ time_home }} ==> <a href="/"class="button">REFRESH</a></h3>		
+	<hr>
+	<p> @2021 Developed by Jayden Smith </p>
+    
+    <script src="../static/raphael-2.1.4.min.js"></script>
+    <script src="../static/justgage.js"></script>
+    <script>
+	var g1, g2;
+	document.addEventListener("DOMContentLoaded", function(event) {
+	    g1 = new JustGage({
+		id: "g1",
+		value: {{temp_roof}},
+		valueFontColor: "black",
+		min: -20,
+		max: 125,
+		title: "Temperature",
+		label: "Fahrenheit"
+	});
+	    g2 = new JustGage({
+		id: "g2",
+		value: {{hum_roof}},
+		valueFontColor: "black",
+		min: 0,
+		max: 100,
+		title: "Humidity",
+		label: "%"
+	});
+      });
+    </script>
+</body>
+</html>
