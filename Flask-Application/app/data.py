@@ -1,9 +1,6 @@
-from flask import (Flask, render_template, request, url_for, make_response, send_file)
+from flask import (Flask, render_template, request, url_for)
 from flask_mysql_connector import MySQL
 import json
-import io
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
 
 # unique IDs for Zigbee sensor nodes
 ROOF_SENSOR_ID = "0013a200Ac21216"
@@ -99,7 +96,7 @@ def getRecentData(sensor_name=""):
 
 # Read named sensor entries from database
 def read_sensor_db(sensor_name="", days=0):
-  mycursor = mysql.new_cursor()
+  mycursor = smartswampcooler_db.cursor()
 
   if sensor_name == "roof":
     params = (ROOF_SENSOR_ID, days,)
@@ -115,19 +112,26 @@ def read_sensor_db(sensor_name="", days=0):
     
   mycursor.execute(SQL_SELECT_SENSOR_DATA, params)
   
-  data = mycursor.fetchall()
-  dates = []
-  temps = []
-  hums = []
-  for row in data:
-      dates.append(row[2])
-      temps.append(row[3])
-      hums.append(row[4])
-  
-  return dates, temps, hums
+  # this will extract row headers
+  row_headers = [x[0] for x in mycursor.description] 
+  myresult = mycursor.fetchall()
 
-@app.route("/")
-def index():
+  json_data = []
+  for result in myresult:
+    json_data.append(dict(zip(row_headers,result)))
+
+  data = json.dumps(json_data, indent=4, sort_keys=True, default=str)
+  data = json.loads(data)
+  
+  print("Displaying {} sensor data over last {} days: ".format(sensor_name, days))
+  # print out all json data entries
+  for i in range(len(data)):
+      print(data[i])
+      sensor_data = map_to_object(data[i])
+  
+  return sensor_data
+
+def recent_data():
     recent_roof_data = SensorData()
     recent_home_data = SensorData()
     recent_roof_data = getRecentData(sensor_name="roof")
@@ -141,87 +145,5 @@ def index():
         'temp_home': recent_home_data.temperature,
         'hum_home': recent_home_data.humidity
     }
-    return render_template('main/index.html', **templateData)
-
-@app.route('/plot/temp_roof')
-def plot_temp_roof():
-    times, temps, hums = read_sensor_db(sensor_name="roof", days=14)
-    ys = temps
-    print("These are my outside temperature values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Temperature [°F]")
-    axis.set_xlabel("Timestamp")
-    axis.grid(True)
-    xs = range(len(times))
-    axis.plot(xs, ys)
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
-
-@app.route('/plot/hum_roof')
-def plot_hum_roof():
-    times, temps, hums = read_sensor_db(sensor_name="roof", days=14)
-    ys = hums
-    print("These are my outside humidity values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Humidity [%]")
-    axis.set_xlabel("Timestamp")
-    axis.grid(True)
-    xs = range(len(hums))
-    axis.plot(xs, ys)
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
-
-@app.route('/plot/temp_home')
-def plot_temp_home():
-    times, temps, hums = read_sensor_db(sensor_name="home", days=14)
-    ys = temps
-    print("These are my inside temperature values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Temperature [°F]")
-    axis.set_xlabel("Timestamp")
-    axis.grid(True)
-    xs = range(len(temps))
-    axis.plot(xs, ys)
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
-
-@app.route('/plot/hum_home')
-def plot_hum_home():
-    times, temps, hums = read_sensor_db(sensor_name="home", days=14)
-    ys = hums
-    print("These are my inside humidity values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Humidity [%]")
-    axis.set_xlabel("Timestamp")
-    axis.grid(True)
-    xs = range(len(hums))
-    axis.plot(xs, ys)
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
-
-@app.route('/cooler')
-def cooler_window():
-    autoOn = True
-    fanOn = False
-    pumpOn = False
-    return render_template('main/cooler.html', autoOn=autoOn, fanOn=fanOn, pumpOn=pumpOn)
+    
+    return templateData
