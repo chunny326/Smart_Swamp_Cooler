@@ -1,12 +1,12 @@
 """
-Jayden Smith
+Author: Jayden Smith
 
-Last Modified: January 25, 2021
+Last Modified: February 8, 2021
 
 ECE 4020 - Senior Project II
 
 Main script for SmartSwampCooler project
-  smartSwampCooler.py
+filename: smartSwampCooler.py
 
 This code runs on the Raspberry Pi 4 Model B acting as the master
 controller. 
@@ -174,7 +174,7 @@ def read_sensor_db(sensor_name="", days=0):
   mycursor = smartswampcooler_db.cursor()
 
   if sensor_name == "roof":
-    params = (ROOF_SENSOR_ID, days,)
+    params = (ROOF_SENSOR_ID, days,) 
   elif sensor_name == "home":
     params = (HOME_SENSOR_ID, days,)
   else:
@@ -184,6 +184,7 @@ def read_sensor_db(sensor_name="", days=0):
   
   if days < 1:
     print("ERROR: Specify number of days for sensor data >1\n")
+    return -1
     
   mycursor.execute(SQL_SELECT_SENSOR_DATA, params)
   

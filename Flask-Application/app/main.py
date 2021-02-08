@@ -1,3 +1,16 @@
+"""
+Author: Jayden Smith
+
+Last Modified: February 8, 2021
+
+ECE 4020 - Senior Project II
+
+Main script for Flask website
+filename: main.py
+
+
+"""
+
 from flask import (Flask, render_template, request, url_for, make_response, send_file)
 from flask_mysql_connector import MySQL
 import json
@@ -5,13 +18,13 @@ import io
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-# unique IDs for Zigbee sensor nodes
+# Unique IDs for Zigbee sensor nodes
 ROOF_SENSOR_ID = "0013a200Ac21216"
 HOME_SENSOR_ID = "0013a200Ac1f102"
 
-app = Flask(__name__) #Needs to be used in every flask application
+app = Flask(__name__) # Needs to be used in every flask application
 
-# Connect the mySQL database and provide login credentials
+# Connect to the mySQL database and provide login credentials
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'pi'
 app.config['MYSQL_DATABASE'] = 'smartswampcooler'
@@ -27,6 +40,7 @@ SQL_SELECT_SENSOR_DATA = """
   AND timestamp >= NOW() - INTERVAL %s DAY
 """
 
+# Select most recent entry for given sensor ID
 SQL_SELECT_RECENT_DATA = """
   SELECT *
   FROM sensor_data
@@ -77,12 +91,14 @@ def getRecentData(sensor_name=""):
     print("Specify valid sensor name: 'roof' or 'home'\n")
     return -1
   
+  # retrieve most recent data
   mycursor.execute(SQL_SELECT_RECENT_DATA, params)
   
   # this will extract row headers
   row_headers = [x[0] for x in mycursor.description] 
   myresult = mycursor.fetchall()
 
+  # convert SQL entry to Python dict object
   json_data = []
   for result in myresult:
     json_data.append(dict(zip(row_headers,result)))
@@ -97,8 +113,9 @@ def getRecentData(sensor_name=""):
   
   return sensor_data
 
-# Read named sensor entries from database
+# Read entries from database given sensor name and number of days
 def read_sensor_db(sensor_name="", days=0):
+  # create new connection cursor
   mycursor = mysql.new_cursor()
 
   if sensor_name == "roof":
@@ -112,9 +129,13 @@ def read_sensor_db(sensor_name="", days=0):
   
   if days < 1:
     print("ERROR: Specify number of days for sensor data >1\n")
+    return -1
     
+  # retrieve data from given sensor for given number of days
   mycursor.execute(SQL_SELECT_SENSOR_DATA, params)
   
+  # feed database entries into individual temps/hums/times for plotting
+  # and return these Python lists
   data = mycursor.fetchall()
   dates = []
   temps = []
