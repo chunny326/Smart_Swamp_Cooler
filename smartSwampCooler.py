@@ -6,6 +6,7 @@ Last Modified: January 25, 2021
 ECE 4020 - Senior Project II
 
 Main script for SmartSwampCooler project
+  smartSwampCooler.py
 
 This code runs on the Raspberry Pi 4 Model B acting as the master
 controller. 
