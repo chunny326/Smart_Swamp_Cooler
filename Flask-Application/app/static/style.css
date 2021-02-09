@@ -1,9 +1,10 @@
 body{
 	background: #FFF;
-	padding:1%
+	padding:1%;
+	font-size: 50px 
 }
 .button {
-	font: bold 25px Arial;
+	font: bold 50px Arial;
 	text-decoration: none;
 	background-color: #150717;
 	color: #FFF;

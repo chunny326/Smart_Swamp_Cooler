@@ -7,8 +7,6 @@ ECE 4020 - Senior Project II
 
 Main script for Flask website
 filename: main.py
-
-
 """
 
 from flask import (Flask, render_template, request, url_for, make_response, send_file)
@@ -17,6 +15,9 @@ import json
 import io
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+
+global numDays
+numDays = 14
 
 # Unique IDs for Zigbee sensor nodes
 ROOF_SENSOR_ID = "0013a200Ac21216"
@@ -38,6 +39,7 @@ SQL_SELECT_SENSOR_DATA = """
   FROM sensor_data
   WHERE sensor_id=%s
   AND timestamp >= NOW() - INTERVAL %s DAY
+  ORDER BY timestamp
 """
 
 # Select most recent entry for given sensor ID
@@ -114,7 +116,7 @@ def getRecentData(sensor_name=""):
   return sensor_data
 
 # Read entries from database given sensor name and number of days
-def read_sensor_db(sensor_name="", days=0):
+def read_sensor_db(sensor_name="", days=2):
   # create new connection cursor
   mycursor = mysql.new_cursor()
 
@@ -160,13 +162,38 @@ def index():
         'hum_roof': recent_roof_data.humidity,
         'time_home': recent_home_data.timestamp,
         'temp_home': recent_home_data.temperature,
-        'hum_home': recent_home_data.humidity
+        'hum_home': recent_home_data.humidity,
+        'num_days': numDays
+    }
+    return render_template('main/index.html', **templateData)
+
+@app.route('/', methods=['POST'])
+def my_form_post():
+    global numDays
+    numDays = int (request.form['numDays'])
+    if numDays == 0:
+        numDays = 14
+        
+    recent_roof_data = SensorData()
+    recent_home_data = SensorData()
+    recent_roof_data = getRecentData(sensor_name="roof")
+    recent_home_data = getRecentData(sensor_name="home")
+    
+    templateData = {
+        'time_roof': recent_roof_data.timestamp,
+        'temp_roof': recent_roof_data.temperature,
+        'hum_roof': recent_roof_data.humidity,
+        'time_home': recent_home_data.timestamp,
+        'temp_home': recent_home_data.temperature,
+        'hum_home': recent_home_data.humidity,
+        'num_days': numDays
     }
     return render_template('main/index.html', **templateData)
 
 @app.route('/plot/temp_roof')
 def plot_temp_roof():
-    times, temps, hums = read_sensor_db(sensor_name="roof", days=14)
+    global numDays
+    times, temps, hums = read_sensor_db(sensor_name="roof", days=numDays)
     ys = temps
     print("These are my outside temperature values:\n", ys)
     fig = Figure()
@@ -174,8 +201,10 @@ def plot_temp_roof():
     axis.set_title("Temperature [°F]")
     axis.set_xlabel("Time")
     axis.grid(True)
-    xs = range(len(times))
+    xs = times
     axis.plot(xs, ys)
+    axis.set_xticklabels(xs, rotation=30)
+    fig.tight_layout()
     canvas = FigureCanvas(fig)
     output = io.BytesIO()
     canvas.print_png(output)
@@ -185,7 +214,8 @@ def plot_temp_roof():
 
 @app.route('/plot/hum_roof')
 def plot_hum_roof():
-    times, temps, hums = read_sensor_db(sensor_name="roof", days=14)
+    global numDays
+    times, temps, hums = read_sensor_db(sensor_name="roof", days=numDays)
     ys = hums
     print("These are my outside humidity values:\n", ys)
     fig = Figure()
@@ -193,8 +223,10 @@ def plot_hum_roof():
     axis.set_title("Humidity [%]")
     axis.set_xlabel("Time")
     axis.grid(True)
-    xs = range(len(hums))
+    xs = times
     axis.plot(xs, ys)
+    axis.set_xticklabels(xs, rotation=30)
+    fig.tight_layout()
     canvas = FigureCanvas(fig)
     output = io.BytesIO()
     canvas.print_png(output)
@@ -204,7 +236,8 @@ def plot_hum_roof():
 
 @app.route('/plot/temp_home')
 def plot_temp_home():
-    times, temps, hums = read_sensor_db(sensor_name="home", days=14)
+    global numDays
+    times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
     ys = temps
     print("These are my inside temperature values:\n", ys)
     fig = Figure()
@@ -212,8 +245,10 @@ def plot_temp_home():
     axis.set_title("Temperature [°F]")
     axis.set_xlabel("Time")
     axis.grid(True)
-    xs = range(len(temps))
+    xs = times
     axis.plot(xs, ys)
+    axis.set_xticklabels(xs, rotation=30)
+    fig.tight_layout()
     canvas = FigureCanvas(fig)
     output = io.BytesIO()
     canvas.print_png(output)
@@ -223,7 +258,8 @@ def plot_temp_home():
 
 @app.route('/plot/hum_home')
 def plot_hum_home():
-    times, temps, hums = read_sensor_db(sensor_name="home", days=14)
+    global numDays
+    times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
     ys = hums
     print("These are my inside humidity values:\n", ys)
     fig = Figure()
@@ -231,8 +267,10 @@ def plot_hum_home():
     axis.set_title("Humidity [%]")
     axis.set_xlabel("Time")
     axis.grid(True)
-    xs = range(len(hums))
+    xs = times
     axis.plot(xs, ys)
+    axis.set_xticklabels(xs, rotation=30)
+    fig.tight_layout()
     canvas = FigureCanvas(fig)
     output = io.BytesIO()
     canvas.print_png(output)

@@ -31,15 +31,43 @@
 	<h3> Last Outside Sensor Reading: {{ time_roof }} ==> <a href="/"class="button">REFRESH</a></h3>
 	<h3> Last Inside Sensor Reading: {{ time_home }} ==> <a href="/"class="button">REFRESH</a></h3>		
 	<hr>
+	<hr>
+	    <h3>Current Cooler Setting: //TODO<\h3>
+	    <h3>Change Cooler Setting:</h3>
+	    <form method="POST">
+  	    <label for="coolerSetting"></label>
+  		<select id="coolerSetting" name="coolerSettings" style="font-size:50px;">
+		    <option value="Auto" style="font-size:50px;">Auto</option>
+		    <option value="Fan Hi" style="font-size:50px;">Fan Hi</option>
+		    <option value="Fan Lo" style="font-size:50px;">Fan Lo</option>
+		    <option value="Pump" style="font-size:50px;">Pump</option>
+		</select>
+  		<input type="submit" style="font-size:50px;">
+	    </form>
+	<hr>	
+	<hr>
+	<h3> Showing last {{ num_days }} day(s) of temperature/humidity readings </h3> 
+	<h3> Change # of Days: </h3>
+	<form method="POST">
+  	    <label for="numDays"></label>
+  		<select id="numDays" name="numDays" style="font-size:50px;">
+		    <option value="1" style="font-size:50px;">1</option>
+		    <option value="7" style="font-size:50px;">7</option>
+		    <option value="14" style="font-size:50px;">14</option>
+		    <option value="31" style="font-size:50px;">31</option>
+		</select>
+  		<input type="submit" style="font-size:50px;">
+	</form>
+	<hr>
 	<h3> HISTORICAL OUTSIDE DATA </h3>
 	<hr>
-	<img src="/plot/temp_roof" alt="Image Placeholder" width="49%">
-	<img src="/plot/hum_roof" alt="Image Placeholder" width="49%">
+	<img src="/plot/temp_roof" alt="Image Placeholder">
+	<img src="/plot/hum_roof" alt="Image Placeholder">
 	<hr>
 	<h3> HISTORICAL INSIDE DATA </h3>
 	<hr>
-	<img src="/plot/temp_home" alt="Image Placeholder" width="49%">
-	<img src="/plot/hum_home" alt="Image Placeholder" width="49%">
+	<img src="/plot/temp_home" alt="Image Placeholder">
+	<img src="/plot/hum_home" alt="Image Placeholder">
 	<p> @2021 Developed by Jayden Smith </p>
     
     <script src="../static/raphael-2.1.4.min.js"></script>
