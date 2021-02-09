@@ -4,6 +4,7 @@
     <title> Sensor Data </title>
     <link rel="stylesheet" href='../static/style.css'/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="refresh" content="300" >
     <style>
         body {
 	    text-align: center;
@@ -83,14 +84,6 @@
 		label: "%"
 	});
       });
-    </script>
-    <script src="../../jquery/jquery-3.2.1.min.js"></script>
-    <div id="content">{{ hum_home }}</div>
-
-    <script>
-    setInterval(function(){
-        $("#content").load("/index.html")
-    },10000)
     </script>
 </body>
 </html>

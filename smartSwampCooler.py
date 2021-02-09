@@ -269,7 +269,7 @@ if __name__== "__main__":
         sensor_data = xbee_to_object(raw_xb_data)
         display_sensor_data(sensor_data)
         write_db(sensor_data)
-        read_sensor_db(sensor_name="roof", days=2) 
+        read_sensor_db(sensor_name="home", days=2) 
         
         # check updated database contents
         # read_all_db()
