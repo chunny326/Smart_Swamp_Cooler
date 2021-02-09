@@ -1,7 +1,9 @@
 """
-Jayden Smith
+Author: Jayden Smith
 
-Last Modified: January 25, 2021
+Last Modified: February 8, 2021
+
+filename: main.py
 
 ECE 4020 - Senior Project II
 
@@ -15,6 +17,8 @@ of the MC (Raspberry Pi 4).
 import xbee
 import time
 
+# Configure network settings, including Coordinator identification (CE - 1),
+#   baud rate (BD - 57600), PAN ID (ID - ABCD), Node Join time (NJ - 0xFF)
 print("Forming a new Zigbee network as a coordinator...")
 xbee.atcmd("NI", "Coordinator Hub")
 # "BD": 0x3 => 9600, 0x7 => 115200
@@ -25,15 +29,16 @@ for command, value in network_settings.items():
 xbee.atcmd("AC")  # Apply changes
 time.sleep(1)
 
-# Query AI until it reports success
+# Query AI until it reports success, then settings are configured
 while xbee.atcmd("AI") != 0:
     time.sleep_ms(100)
 
 print("Network Established\n")
 print("Waiting for a remote node to join...")
 
+# Perform a network discovery until the router joins
 node_list = []
-while len(node_list) == 0:  # Perform a network discovery until the router joins
+while len(node_list) == 0:
     node_list = list(xbee.discover())
 print("Remote node found, transmitting data")
 
@@ -47,6 +52,7 @@ for node in node_list:
 
 print("Receiving data...")
 
+# continuously check for messages, then forward to the serial UART port
 received_msg = {}
 while True:
     received_msg = xbee.receive()
