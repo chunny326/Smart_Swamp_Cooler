@@ -19,6 +19,9 @@ from matplotlib.figure import Figure
 global numDays
 numDays = 14
 
+global coolerSetting
+coolerSetting = 'Off'
+
 # Unique IDs for Zigbee sensor nodes
 ROOF_SENSOR_ID = "0013a200Ac21216"
 HOME_SENSOR_ID = "0013a200Ac1f102"
@@ -49,6 +52,12 @@ SQL_SELECT_RECENT_DATA = """
   WHERE sensor_id=%s
   ORDER BY timestamp
   DESC LIMIT 1
+"""
+
+# Insert new row of Cooler Settings
+SQL_INSERT_SETTINGS = """
+ INSERT INTO cooler_settings (timestamp, setting)
+ VALUES (NOW(), %s)
 """
 
 #  Define a class for holding database entry information
@@ -110,7 +119,7 @@ def getRecentData(sensor_name=""):
   
   # print out all json data entries
   for i in range(len(data)):
-      print(data[i])
+      #print(data[i])
       sensor_data = map_to_object(data[i])
   
   return sensor_data
@@ -149,6 +158,46 @@ def read_sensor_db(sensor_name="", days=2):
   
   return dates, temps, hums
 
+def plot_sensor(data, time, loc='inside', sensor='temperature'):
+    ys = data
+    #print("These are my {} {} values:\n{}".format(loc, sensor, ys))
+    
+    fig = Figure()
+    axis = fig.add_subplot(1, 1, 1)
+    
+    if sensor == 'temperature':
+        axis.set_title("Temperature [°F]")
+    else:
+        axis.set_title("Humidity [%]")
+    
+    axis.set_xlabel("Time")
+    axis.grid(True)
+    xs = time
+    axis.plot(xs, ys)
+    axis.tick_params('x', labelrotation=75)
+    fig.set_tight_layout(True)
+    
+    canvas = FigureCanvas(fig)
+    output = io.BytesIO()
+    canvas.print_png(output)
+    
+    response = make_response(output.getvalue())
+    response.mimetype = 'image/png'
+    
+    return response
+
+# Insert newest cooler setting to the database
+def write_db(coolerSet):
+    print("Inserting new cooler setting data...")
+    
+    mycursor = mysql.new_cursor()
+
+    params = (coolerSet,)
+    mycursor.execute(SQL_INSERT_SETTINGS, params)
+    mysql.connection.commit()
+  
+    print("{} record(s) affected".format(mycursor.rowcount))
+  
 @app.route("/")
 def index():
     recent_roof_data = SensorData()
@@ -163,16 +212,23 @@ def index():
         'time_home': recent_home_data.timestamp,
         'temp_home': recent_home_data.temperature,
         'hum_home': recent_home_data.humidity,
-        'num_days': numDays
+        'num_days': numDays,
+        'cooler_setting': coolerSetting
     }
     return render_template('main/index.html', **templateData)
 
 @app.route('/', methods=['POST'])
 def my_form_post():
-    global numDays
-    numDays = int (request.form['numDays'])
-    if numDays == 0:
-        numDays = 14
+    req_form = dict(request.form)
+    if 'numDays' in req_form:
+        #print("Setting numDays\n")
+        global numDays
+        numDays = int (request.form.get('numDays'))
+    elif 'coolerSetting' in req_form:
+        #print("Setting coolerSetting\n")
+        global coolerSetting
+        coolerSetting = request.form.get('coolerSetting')
+        write_db(coolerSetting)
         
     recent_roof_data = SensorData()
     recent_home_data = SensorData()
@@ -186,7 +242,8 @@ def my_form_post():
         'time_home': recent_home_data.timestamp,
         'temp_home': recent_home_data.temperature,
         'hum_home': recent_home_data.humidity,
-        'num_days': numDays
+        'num_days': numDays,
+        'cooler_setting': coolerSetting
     }
     return render_template('main/index.html', **templateData)
 
@@ -194,93 +251,22 @@ def my_form_post():
 def plot_temp_roof():
     global numDays
     times, temps, hums = read_sensor_db(sensor_name="roof", days=numDays)
-    ys = temps
-    print("These are my outside temperature values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Temperature [°F]")
-    axis.set_xlabel("Time")
-    axis.grid(True)
-    xs = times
-    axis.plot(xs, ys)
-    axis.set_xticklabels(xs, rotation=30)
-    fig.tight_layout()
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
+    return plot_sensor(temps, loc='outside', sensor='temperature', time=times)
 
 @app.route('/plot/hum_roof')
 def plot_hum_roof():
     global numDays
     times, temps, hums = read_sensor_db(sensor_name="roof", days=numDays)
-    ys = hums
-    print("These are my outside humidity values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Humidity [%]")
-    axis.set_xlabel("Time")
-    axis.grid(True)
-    xs = times
-    axis.plot(xs, ys)
-    axis.set_xticklabels(xs, rotation=30)
-    fig.tight_layout()
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
+    return plot_sensor(hums, loc='outside', sensor='humidity', time=times)
 
 @app.route('/plot/temp_home')
 def plot_temp_home():
     global numDays
     times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
-    ys = temps
-    print("These are my inside temperature values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Temperature [°F]")
-    axis.set_xlabel("Time")
-    axis.grid(True)
-    xs = times
-    axis.plot(xs, ys)
-    axis.set_xticklabels(xs, rotation=30)
-    fig.tight_layout()
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
+    return plot_sensor(temps, loc='inside', sensor='temperature', time=times)
 
 @app.route('/plot/hum_home')
 def plot_hum_home():
     global numDays
     times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
-    ys = hums
-    print("These are my inside humidity values:\n", ys)
-    fig = Figure()
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("Humidity [%]")
-    axis.set_xlabel("Time")
-    axis.grid(True)
-    xs = times
-    axis.plot(xs, ys)
-    axis.set_xticklabels(xs, rotation=30)
-    fig.tight_layout()
-    canvas = FigureCanvas(fig)
-    output = io.BytesIO()
-    canvas.print_png(output)
-    response = make_response(output.getvalue())
-    response.mimetype = 'image/png'
-    return response
-
-@app.route('/cooler')
-def cooler_window():
-    autoOn = True
-    fanOn = False
-    pumpOn = False
-    return render_template('main/cooler.html', autoOn=autoOn, fanOn=fanOn, pumpOn=pumpOn)
+    return plot_sensor(hums, loc='inside', sensor='humidity', time=times)
