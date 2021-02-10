@@ -40,6 +40,11 @@ GPIO.setmode(GPIO.BCM)
 ROOF_SENSOR_ID = "0013a200Ac21216"
 HOME_SENSOR_ID = "0013a200Ac1f102"
 
+# Pi GPIO assignments for cooler signals
+#speed = LED(16)
+#fan   = LED(21)
+#pump  = LED(20)
+
 # ---------------------- Pi 4 Serial Functionality ---------------------- # 
 # 
 # Setup for Serial port to match Zigbee protocol
@@ -120,6 +125,15 @@ SQL_SELECT_SENSOR_DATA = """
   FROM sensor_data
   WHERE sensor_id=%s
   AND timestamp >= NOW() - INTERVAL %s DAY
+  ORDER BY timestamp
+"""
+
+# Select most recent entry for cooler setting
+SQL_SELECT_COOLER_SETTING = """
+  SELECT *
+  FROM cooler_settings
+  ORDER BY timestamp
+  DESC LIMIT 1
 """
 
 # Maps database data to sensor_data object
@@ -251,19 +265,59 @@ def display_sensor_data(sensor_data):
   print("Sensor ID: '{}', Temperature: '{}', Humidity: '{}'".format(\
       sensor_data.sensor_id, sensor_data.temperature, sensor_data.humidity))
 
-# ---------------------------------------------------------------------- #
-if __name__== "__main__":
-  # verify writing to the database with SensorData class and db functions above
-  # sensor_data = SensorData()
-  # sensor_data = read_all_db()
-  # new_data = SensorData(id="7", sensor_id="1", temperature=10.1, humidity=150.2)
-  # write_db(new_data)  
-  # read_all_db()
+def get_cooler_setting():
+    # creating a connection cursor
+    mycursor = smartswampcooler_db.cursor()
+    
+    # retrieve data from given sensor for given number of days
+    mycursor.execute(SQL_SELECT_COOLER_SETTING)
+  
+    # this will extract row headers
+    row_headers = [x[0] for x in mycursor.description] 
+    myresult = mycursor.fetchall()
 
-  # check contents of the database
-  # sensor_data = SensorData()
-  # sensor_data = read_all_db()
-  while(1):    
+    json_data = []
+    for result in myresult:
+        json_data.append(dict(zip(row_headers,result)))
+    
+    data = json.dumps(json_data, sort_keys=True, default=str)
+    data = json.loads(data)
+
+    smartswampcooler_db.commit()
+    
+    #print("SETTING: ", data[0]["setting"])
+    return data[0]["setting"]
+
+def set_cooler(setting):
+    if setting == 'Off':
+        # turn off all GPIO signals
+        print('Off')
+    elif setting == 'Auto':
+        # run sweet algorithm
+        print('Auto')
+    elif setting == 'Pump':
+        # turn on Pump GPIO
+        print('Pump')
+    elif setting == 'Fan Hi':
+        # turn on Fan Hi GPIO
+        print('Fan Hi')
+    elif setting == 'Fan Lo':
+        # turn on Fan Lo GPIO
+        print('Fan Lo')
+    elif setting == 'Fan Hi (w/Pump)':
+        # turn on Fan Hi w/Pump GPIO
+        print('Fan Hi (w/Pump)')
+    elif setting == 'Fan Lo (w/Pump)':
+        # turn on Fan Lo w/Pump GPIO
+        print('Fan Lo (w/Pump)')
+    
+# ---------------------------------------------------------------------- #
+
+if __name__== "__main__":
+    
+  while(1):
+    set_cooler(get_cooler_setting())
+    
     raw_xb_data = wait_for_serial_response(30)
 
     if raw_xb_data != "":
@@ -271,7 +325,7 @@ if __name__== "__main__":
         sensor_data = xbee_to_object(raw_xb_data)
         display_sensor_data(sensor_data)
         write_db(sensor_data)
-        read_sensor_db(sensor_name="home", days=2) 
+        # read_sensor_db(sensor_name="home", days=2) 
         
         # check updated database contents
         # read_all_db()
@@ -281,7 +335,19 @@ if __name__== "__main__":
   
     print("Finished\n")
     time.sleep(5)
-    
+   
+# ---------------------------------------------------------------------- #
+   
+    # verify writing to the database with SensorData class and db functions above
+    # sensor_data = SensorData()
+    # sensor_data = read_all_db()
+    # new_data = SensorData(id="7", sensor_id="1", temperature=10.1, humidity=150.2)
+    # write_db(new_data)  
+    # read_all_db()
+
+    # check contents of the database
+    # sensor_data = SensorData()
+    # sensor_data = read_all_db()
     # extract all db entries for given sensor
     # read_sensor_db(sensor_name="roof")
     # read_sensor_db(sensor_name="home")

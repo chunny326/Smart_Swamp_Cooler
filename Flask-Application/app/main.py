@@ -19,8 +19,8 @@ from matplotlib.figure import Figure
 global numDays
 numDays = 14
 
-global coolerSetting
-coolerSetting = 'Off'
+#global coolerSetting
+#coolerSetting = 'Off'
 
 # Unique IDs for Zigbee sensor nodes
 ROOF_SENSOR_ID = "0013a200Ac21216"
@@ -58,6 +58,14 @@ SQL_SELECT_RECENT_DATA = """
 SQL_INSERT_SETTINGS = """
  INSERT INTO cooler_settings (timestamp, setting)
  VALUES (NOW(), %s)
+"""
+
+# Select most recent entry for cooler setting
+SQL_SELECT_COOLER_SETTING = """
+  SELECT *
+  FROM cooler_settings
+  ORDER BY timestamp
+  DESC LIMIT 1
 """
 
 #  Define a class for holding database entry information
@@ -158,6 +166,26 @@ def read_sensor_db(sensor_name="", days=2):
   
   return dates, temps, hums
 
+def get_cooler_setting():
+    # creating a connection cursor
+    mycursor = mysql.new_cursor()
+    
+    # retrieve data from given sensor for given number of days
+    mycursor.execute(SQL_SELECT_COOLER_SETTING)
+  
+    # this will extract row headers
+    row_headers = [x[0] for x in mycursor.description] 
+    myresult = mycursor.fetchall()
+
+    json_data = []
+    for result in myresult:
+        json_data.append(dict(zip(row_headers,result)))
+    
+    data = json.dumps(json_data, sort_keys=True, default=str)
+    data = json.loads(data)
+    
+    return data[0]["setting"]
+    
 def plot_sensor(data, time, loc='inside', sensor='temperature'):
     ys = data
     #print("These are my {} {} values:\n{}".format(loc, sensor, ys))
@@ -204,6 +232,7 @@ def index():
     recent_home_data = SensorData()
     recent_roof_data = getRecentData(sensor_name="roof")
     recent_home_data = getRecentData(sensor_name="home")
+    coolerSetting = get_cooler_setting()
     
     templateData = {
         'time_roof': recent_roof_data.timestamp,
@@ -226,7 +255,7 @@ def my_form_post():
         numDays = int (request.form.get('numDays'))
     elif 'coolerSetting' in req_form:
         #print("Setting coolerSetting\n")
-        global coolerSetting
+        #global coolerSetting
         coolerSetting = request.form.get('coolerSetting')
         write_db(coolerSetting)
         
