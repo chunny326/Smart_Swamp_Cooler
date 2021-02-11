@@ -1,4 +1,4 @@
-from flask import (Flask, render_template, url_for)
+from flask import (Flask, render_template, url_for, request)
 # from flask import Markup
 
 app = Flask(__name__) #Needs to be used in every flask application
@@ -15,14 +15,37 @@ def log_window():
     data = { 'labels' : labels, 'values': values }
     return render_template('main/log.html', data=data, title='Log File')
 
-@app.route('/cooler')
+@app.route('/cooler', methods=('GET','POST'))
 def cooler_window():
-    autoOn = False
-    manualOn = True
-    fanOn = False
-    pumpOn = False
 
-    return render_template('main/cooler.html', autoOn=autoOn, manualOn=manualOn, fanOn=fanOn, pumpOn=pumpOn)
+    if request.method == 'POST': 
+        autoOn = request.form.get('auto')
+        manualOn = request.form.get('manual')
+        highFanOn = request.form.get('highFan')
+        lowFanOn = request.form.get('lowFan')
+        pumpOn = request.form.get('pump')
+
+        print("Is auto checked?  " + str("" if autoOn is None else autoOn))
+        print("Is manual checked?  " + str("" if manualOn is None else manualOn))
+        print("Is highFan checked?  " + str("" if highFanOn is None else highFanOn))
+        print("Is lowFan checked?  " + str("" if lowFanOn is None else lowFanOn))
+        print("Is pump checked?  " + str("" if pumpOn is None else pumpOn))
+        #print("Is cooler running yet?  " + str("" if coolerRunning is None else coolerRunning))
+        print("Switching\n")
+
+        # if coolerRunning == False:
+        #     coolerRunning = True
+        # else:
+        #     coolerRunning = False
+    else:
+        # coolerRunning = False
+        autoOn = True
+        manualOn = False
+        highFanOn = False
+        lowFanOn = True
+        pumpOn = True
+
+    return render_template('main/cooler.html', coolerRunning=False, autoOn=autoOn, manualOn=manualOn, hihgFanOn=highFanOn, lowFanOn=lowFanOn, pumpOn=pumpOn)
 
 @app.route('/interval')
 def interval_window():

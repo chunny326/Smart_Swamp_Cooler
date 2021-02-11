@@ -2,18 +2,32 @@
 
 {% block content %}
 <section id="timer">
-    <div class="container py-5 mx-auto">
-        <div class="row">
-            <p>Timer Window</p>
-        </div>
-        <div class="row">
-            <div class="col">
-                <a href="{{url_for('index')}}" class="btn-success">Add</a>
-                <a href="{{url_for('index')}}" class="btn-secondary">Cancel</a>
-            </div>
-        </div>
+    <!-- Side navigation -->
+    <div class="sidenav">
+        <button onclick="document.getElementById('startCoolerModal').style.display='block'" class="w3-button w3-black">Start Cooler</button>
+        <button onclick="document.getElementById('startCoolerModal').style.display='block'" class="w3-button w3-black">Timer</button>
     </div>
+  
+    <!-- Page content -->
+    <div class="main">
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsam perspiciatis corporis quisquam dolor eligendi culpa illum nemo voluptas, quas qui quaerat fugiat quam? Cum provident doloribus maxime facere nihil voluptates!</p>
+
+        <!-- <div class="container py-5 mx-auto">
+            <div class="row">
+                <p>Timer Window</p>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <a href="{{url_for('index')}}" class="btn-success">Add</a>
+                    <a href="{{url_for('index')}}" class="btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div> -->
+
+    </div>
+
 </section>
+
 
 
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section id="cooler">
+<section id="startCooler">
     <div class="container py-5 mx-auto">
         <form method="POST">
             <div class="row">
@@ -10,9 +10,12 @@
                 </div>
                 <div class="col-md-3 col-6 text-left">
                     <div class="toggles">
-                        <input type="checkbox" name="auto" id="auto" class="ios-toggle checkbox" value="{{autoOn}}" {{'checked="checked"' if autoOn else ""}}/>
+                        <input type="checkbox" name="auto" id="auto" class="ios-toggle checkbox" onclick="AutoCheck()" value="{{autoOn}}" {{'checked="checked"' if autoOn else ""}}/>
                         <label for="auto" class="checkbox-label"></label>
                     </div>
+                </div>
+                <div class="col text-right">
+                    <button class="btn" type="submit" onclick="StartStopCooler()" id="startStopButton"></button>
                 </div>
             </div>
             <div class="row">
@@ -21,24 +24,39 @@
                 </div>
                 <div class="col-md-3 col-6 text-left">
                     <div class="toggles">
-                        <input type="checkbox" name="manual" id="manual" class="ios-toggle checkbox" value="{{manualOn}}" {{'checked="checked"' if manualOn else ""}}/>
+                        <input type="checkbox" name="manual" id="manual" class="ios-toggle checkbox" onclick="ManualCheck()" value="{{manualOn}}" {{'checked="checked"' if manualOn else ""}}/>
                         <label for="manual" class="checkbox-label"></label>
                     </div>
                 </div>
+                <div class="col text-right">
+                    <a href="{{url_for('index')}}" class="btn btn-secondary cancelButton">Cancel</a>
+                </div>
             </div>
-            <div class="row pt-3">
+            <div class="row pt-3" id="highFanRow">
                 <div class="col-sm-1 col-2"></div>
                 <div class="col-md-1 col-2 text-left">
-                    <h6>Fan</h6>
+                    <h6>High Fan</h6>
                 </div>
                 <div class="col-md-4 col-6 text-left">
                     <div class="toggles">
-                        <input type="checkbox" name="fan" id="fan" class="ios-toggle checkbox small-checkbox" value="{{fanOn}}" {{'checked="checked"' if fanOn else ""}}/>
-                        <label for="fan" class="checkbox-label checkbox-label-small"></label>
+                        <input type="checkbox" name="highFan" id="highFan" class="ios-toggle checkbox small-checkbox" onclick="HighFanCheck()" value="{{highFanOn}}" {{'checked="checked"' if highFanOn else ""}}/>
+                        <label for="highFan" class="checkbox-label checkbox-label-small"></label>
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="lowFanRow">
+                <div class="col-sm-1 col-2"></div>
+                <div class="col-md-1 col-2 text-left">
+                    <h6>Low Fan</h6>
+                </div>
+                <div class="col-md-4 col-6 text-left">
+                    <div class="toggles">
+                        <input type="checkbox" name="lowFan" id="lowFan" class="ios-toggle checkbox small-checkbox" onclick="LowFanCheck()" value="{{lowFanOn}}" {{'checked="checked"' if lowFanOn else ""}}/>
+                        <label for="lowFan" class="checkbox-label checkbox-label-small"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="pumpRow">
                 <div class="col-sm-1 col-2"></div>
                 <div class="col-md-1 col-2 text-left">
                     <h6>Pump</h6>
@@ -51,14 +69,96 @@
                 </div>
             </div>
         </form>
-        <div class="row">
-            <div class="col">
-                <a href="{{url_for('index')}}" class="btn-secondary">Back</a>
-            </div>
-        </div>
     </div>
 </section>
 
+<script>
+
+    window.onload = LoadPage();
+
+    function AutoCheck(){
+
+        if(document.getElementById("auto").checked)
+        {
+            document.getElementById("manual").checked = false;
+            document.getElementById("highFanRow").classList.add("d-none");
+            document.getElementById("lowFanRow").classList.add("d-none");
+            document.getElementById("pumpRow").classList.add("d-none");
+        }
+    }
+
+    function HighFanCheck(){
+        if(document.getElementById("highFan").checked)
+            document.getElementById("lowFan").checked = false;
+    }
+
+    function LoadPage(){
+        
+        var coolerRunning = '{{ coolerRunning }}';
+
+        if(coolerRunning == "True")
+        {
+            console.log("STOP");
+            document.getElementById("startStopButton").classList.add("btn-danger");
+            document.getElementById("startStopButton").textContent = "Stop";
+        }
+        else
+        {   
+            console.log("START");
+            document.getElementById("startStopButton").classList.add("btn-success");
+            document.getElementById("startStopButton").textContent = "Start";
+        }
+
+        ManualCheck();
+    }
+
+    function LowFanCheck(){
+        if(document.getElementById("lowFan").checked)
+            document.getElementById("highFan").checked = false;
+    }
+
+    function ManualCheck(){
+
+        if(document.getElementById("manual").checked)
+        {
+            document.getElementById("auto").checked = false;
+            document.getElementById("highFanRow").classList.remove("d-none");
+            document.getElementById("lowFanRow").classList.remove("d-none");
+            document.getElementById("pumpRow").classList.remove("d-none");
+        }
+        else
+        {
+            document.getElementById("highFanRow").classList.add("d-none");
+            document.getElementById("lowFanRow").classList.add("d-none");
+            document.getElementById("pumpRow").classList.add("d-none");
+        }
+
+        //Need to add functionality to enable and disable fans and pump switches. 
+    }
+
+    // function StartCooler(){
+        
+    // }
+
+    function StartStopCooler(){
+
+        if(document.getElementById("startStopButton").classList.contains("btn-success"))
+        {
+            document.getElementById("startStopButton").classList.remove("btn-success");
+            document.getElementById("startStopButton").classList.add("btn-danger");
+            document.getElementById("startStopButton").textContent = "Stop";
+
+            //Set coolerRunning to "True"
+        }
+        else
+        {
+            document.getElementById("startStopButton").classList.add("btn-success");
+            document.getElementById("startStopButton").classList.remove("btn-danger");
+            document.getElementById("startStopButton").textContent = "Start";
+        }
+    }
+    
+</script>
 
 {% endblock %}
 
