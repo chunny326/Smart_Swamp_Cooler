@@ -32,6 +32,7 @@ import re
 import time
 import serial
 import RPi.GPIO as GPIO
+from gpiozero import LED
 from datetime import datetime
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -41,9 +42,9 @@ ROOF_SENSOR_ID = "0013a200Ac21216"
 HOME_SENSOR_ID = "0013a200Ac1f102"
 
 # Pi GPIO assignments for cooler signals
-#speed = LED(16)
-#fan   = LED(21)
-#pump  = LED(20)
+speed = LED(21)
+fan   = LED(20)
+pump  = LED(16)
 
 # ---------------------- Pi 4 Serial Functionality ---------------------- # 
 # 
@@ -74,8 +75,9 @@ def flush_read_buffer():
 def wait_for_serial_response(timeout):
     response = read_serial()
     timer = 0
-    while response == "" and timer < timeout:
-        print("  . ({})").format(timeout-timer)
+    while response == b"" and timer < timeout:
+        set_cooler(get_cooler_setting())
+        print("  . ({})".format(timeout-timer))
         timer += 1
         time.sleep(1)
         response = read_serial()
@@ -136,6 +138,12 @@ SQL_SELECT_COOLER_SETTING = """
   DESC LIMIT 1
 """
 
+# Insert new row of Cooler Settings
+SQL_INSERT_SETTINGS = """
+ INSERT INTO cooler_settings (timestamp, setting)
+ VALUES (NOW(), %s)
+"""
+
 # Maps database data to sensor_data object
 def map_to_object(data):
   try:
@@ -155,7 +163,7 @@ def map_to_object(data):
   
   return sensor_data
 
-# Read out all entries from the databse
+# Read out all entries from the database
 def read_all_db():
   mycursor = smartswampcooler_db.cursor()
   mycursor.execute(SQL_SELECT_DATA)
@@ -236,12 +244,14 @@ def write_db(sensor_data):
   
 # Convert raw XBEE data to appropriate database entry
 def xbee_to_object(xb_raw_data):
+  xb_raw_data = xb_raw_data.decode('utf-8')
+  
   # format the raw XBEE data to be able to read into json.loads
   xb_data = xb_raw_data.replace(": ", ': "').replace(", ", '", ')\
             .replace("}", '"}').replace("'", '"').replace('""', '"')\
             .replace('"b"', '').replace('}",', "},")\
             .replace('\\x', '').replace('eui64": ', 'eui64": "')
-
+  
   # convert XBEE data to Python dictionary
   xb_dict = json.loads(xb_data)
 
@@ -265,6 +275,18 @@ def display_sensor_data(sensor_data):
   print("Sensor ID: '{}', Temperature: '{}', Humidity: '{}'".format(\
       sensor_data.sensor_id, sensor_data.temperature, sensor_data.humidity))
 
+# insert newest cooler setting to the database
+def write_setting_db(coolerSet):
+    print("Inserting new cooler setting data...")
+    
+    mycursor = smartswampcooler_db.cursor()
+
+    params = (coolerSet,)
+    mycursor.execute(SQL_INSERT_SETTINGS, params)
+    mysql.connection.commit()
+  
+    print("{} record(s) affected".format(mycursor.rowcount))
+    
 def get_cooler_setting():
     # creating a connection cursor
     mycursor = smartswampcooler_db.cursor()
@@ -288,39 +310,62 @@ def get_cooler_setting():
     #print("SETTING: ", data[0]["setting"])
     return data[0]["setting"]
 
+# fancy algorithm
+def get_auto_setting():
+    return "Fan Hi"
+    
 def set_cooler(setting):
+    if setting[0:4] == 'Auto':
+        # run sweet algorithm
+        print('Auto')
+        setting = get_auto_setting()
+        write_setting_db('Auto ' + setting)
+        # call AUTO algorithm
     if setting == 'Off':
         # turn off all GPIO signals
         print('Off')
-    elif setting == 'Auto':
-        # run sweet algorithm
-        print('Auto')
+        pump.off()
+        fan.off()
+        speed.off()
     elif setting == 'Pump':
         # turn on Pump GPIO
         print('Pump')
+        pump.on()
+        fan.off()
+        speed.off()
     elif setting == 'Fan Hi':
         # turn on Fan Hi GPIO
         print('Fan Hi')
+        pump.off()
+        fan.on()
+        speed.on()
     elif setting == 'Fan Lo':
         # turn on Fan Lo GPIO
         print('Fan Lo')
+        pump.off()
+        fan.on()
+        speed.off()
     elif setting == 'Fan Hi (w/Pump)':
         # turn on Fan Hi w/Pump GPIO
         print('Fan Hi (w/Pump)')
+        pump.on()
+        fan.on()
+        speed.on()
     elif setting == 'Fan Lo (w/Pump)':
         # turn on Fan Lo w/Pump GPIO
         print('Fan Lo (w/Pump)')
+        pump.on()
+        fan.on()
+        speed.off()
     
 # ---------------------------------------------------------------------- #
 
 if __name__== "__main__":
     
-  while(1):
-    set_cooler(get_cooler_setting())
+  while(1):    
+    raw_xb_data = wait_for_serial_response(10)
     
-    raw_xb_data = wait_for_serial_response(30)
-
-    if raw_xb_data != "":
+    if raw_xb_data != b"":
         sensor_data = SensorData()
         sensor_data = xbee_to_object(raw_xb_data)
         display_sensor_data(sensor_data)

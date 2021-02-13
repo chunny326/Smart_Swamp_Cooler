@@ -19,9 +19,6 @@ from matplotlib.figure import Figure
 global numDays
 numDays = 14
 
-#global coolerSetting
-#coolerSetting = 'Off'
-
 # Unique IDs for Zigbee sensor nodes
 ROOF_SENSOR_ID = "0013a200Ac21216"
 HOME_SENSOR_ID = "0013a200Ac1f102"
@@ -253,6 +250,7 @@ def my_form_post():
         #print("Setting numDays\n")
         global numDays
         numDays = int (request.form.get('numDays'))
+        coolerSetting = get_cooler_setting()
     elif 'coolerSetting' in req_form:
         #print("Setting coolerSetting\n")
         #global coolerSetting
