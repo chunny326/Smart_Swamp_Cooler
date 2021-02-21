@@ -65,6 +65,14 @@ SQL_SELECT_COOLER_SETTING = """
   DESC LIMIT 1
 """
 
+# Retrieve all cooler settings to display on webpage
+SQL_SELECT_ALL_COOLER_SETTINGS = """
+  SELECT *
+  FROM cooler_settings
+  ORDER BY timestamp
+  DESC LIMIT 2000
+"""
+
 #  Define a class for holding database entry information
 class SensorData:
   def __init__(self, id="-1", sensor_id="-1", temperature=32.5, humidity=25.7):
@@ -297,3 +305,12 @@ def plot_hum_home():
     global numDays
     times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
     return plot_sensor(hums, loc='inside', sensor='humidity', time=times)
+
+@app.route('/cooler_settings_log')
+def cooler_settings_log():
+    # creating a connection cursor
+    mycursor = mysql.new_cursor()
+    # get all cooler settings to display
+    mycursor.execute(SQL_SELECT_ALL_COOLER_SETTINGS) 
+    data = mycursor.fetchall() 
+    return render_template('main/cooler_settings_log.html', value=data)

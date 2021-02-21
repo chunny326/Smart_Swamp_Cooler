@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<body>
+<section id="cooler_settings_log">
+  <form>
+    <button formaction="/" style="font-size:45px;">BACK TO HOME</button>
+  </form>  
+  <br>
+  <font size="20" face="Courier New" >
+  <table cellspacing="20px"> 
+    <thead> 
+    <tr> 
+	<th>Date and Time</th>
+	<th>Cooler Setting</th> 
+    </tr> 
+    </thead> 
+    <tbody> 
+	{% for row in value %}  
+	    <tr> 
+	        <td>{{row[1]}}</td>
+		<td>{{row[2]}}</td> 
+	    </tr> 
+	{% endfor %} 
+    </tbody> 
+  </table> 
+  </font>
+  <br>
+  <form>
+    <button formaction="/" style="font-size:45px;">BACK TO HOME</button>
+  </form>
+</section>
+</body>
+</html>
+
