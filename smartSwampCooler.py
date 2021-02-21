@@ -283,7 +283,7 @@ def write_setting_db(coolerSet):
 
     params = (coolerSet,)
     mycursor.execute(SQL_INSERT_SETTINGS, params)
-    mysql.connection.commit()
+    smartswampcooler_db.commit()
   
     print("{} record(s) affected".format(mycursor.rowcount))
     
@@ -312,15 +312,21 @@ def get_cooler_setting():
 
 # fancy algorithm
 def get_auto_setting():
-    return "Fan Hi"
+    return "Fan Lo"
     
 def set_cooler(setting):
     if setting[0:4] == 'Auto':
         # run sweet algorithm
         print('Auto')
+        # get old setting to see if database setting needs to be updated
+        temp = setting[5:]
+        #print('Old Setting: ' + temp + '\n')
+        # call smart algorithm to determine appropriate cooler setting
         setting = get_auto_setting()
-        write_setting_db('Auto ' + setting)
-        # call AUTO algorithm
+        #print('New Setting: ' + setting)
+        # TODO: only write to the database every 15 minutes OR if setting changes
+        if setting != temp:
+            write_setting_db('Auto ' + setting)
     if setting == 'Off':
         # turn off all GPIO signals
         print('Off')
