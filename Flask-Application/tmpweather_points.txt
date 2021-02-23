@@ -1,0 +1,94 @@
+{
+    "@context": [
+        "https://geojson.org/geojson-ld/geojson-context.jsonld",
+        {
+            "@version": "1.1",
+            "wx": "https://api.weather.gov/ontology#",
+            "s": "https://schema.org/",
+            "geo": "http://www.opengis.net/ont/geosparql#",
+            "unit": "http://codes.wmo.int/common/unit/",
+            "@vocab": "https://api.weather.gov/ontology#",
+            "geometry": {
+                "@id": "s:GeoCoordinates",
+                "@type": "geo:wktLiteral"
+            },
+            "city": "s:addressLocality",
+            "state": "s:addressRegion",
+            "distance": {
+                "@id": "s:Distance",
+                "@type": "s:QuantitativeValue"
+            },
+            "bearing": {
+                "@type": "s:QuantitativeValue"
+            },
+            "value": {
+                "@id": "s:value"
+            },
+            "unitCode": {
+                "@id": "s:unitCode",
+                "@type": "@id"
+            },
+            "forecastOffice": {
+                "@type": "@id"
+            },
+            "forecastGridData": {
+                "@type": "@id"
+            },
+            "publicZone": {
+                "@type": "@id"
+            },
+            "county": {
+                "@type": "@id"
+            }
+        }
+    ],
+    "id": "https://api.weather.gov/points/41.138,-112.029",
+    "type": "Feature",
+    "geometry": {
+        "type": "Point",
+        "coordinates": [
+            -112.029,
+            41.137999999999998
+        ]
+    },
+    "properties": {
+        "@id": "https://api.weather.gov/points/41.138,-112.029",
+        "@type": "wx:Point",
+        "cwa": "SLC",
+        "forecastOffice": "https://api.weather.gov/offices/SLC",
+        "gridId": "SLC",
+        "gridX": 97,
+        "gridY": 192,
+        "forecast": "https://api.weather.gov/gridpoints/SLC/97,192/forecast",
+        "forecastHourly": "https://api.weather.gov/gridpoints/SLC/97,192/forecast/hourly",
+        "forecastGridData": "https://api.weather.gov/gridpoints/SLC/97,192",
+        "observationStations": "https://api.weather.gov/gridpoints/SLC/97,192/stations",
+        "relativeLocation": {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -112.02838800000001,
+                    41.138060000000003
+                ]
+            },
+            "properties": {
+                "city": "Sunset",
+                "state": "UT",
+                "distance": {
+                    "value": 51.683757371786001,
+                    "unitCode": "unit:m"
+                },
+                "bearing": {
+                    "value": 262,
+                    "unitCode": "unit:degrees_true"
+                }
+            }
+        },
+        "forecastZone": "https://api.weather.gov/zones/forecast/UTZ002",
+        "county": "https://api.weather.gov/zones/county/UTC011",
+        "fireWeatherZone": "https://api.weather.gov/zones/fire/UTZ478",
+        "timeZone": "America/Denver",
+        "radarStation": "KMTX"
+    }
+}

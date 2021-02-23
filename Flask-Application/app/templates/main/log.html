@@ -10,7 +10,7 @@
 
 {% block content %}
 <section id="log">
-    <div class="container py-5 mx-auto">
+    <!-- <div class="container py-5 mx-auto">
         <div class="row">
             <div class="col-2">
                 <div class="graphTabs">
@@ -21,21 +21,21 @@
                 </div>
             </div>
             <div class="col-8">
-                <!-- bar chart canvas element -->
-                <canvas id="temperatureChart" width="550" height="250"></canvas>
+                bar chart canvas element -->
+                <!-- <canvas id="temperatureChart" width="550" height="250"></canvas>
                 <canvas id="humidityChart" width="550" height="250"></canvas>
 
             </div>
             <div class="col-2">
                 <a href="{{url_for('index')}}" class="btn btn-secondary mt-2 align-bottom">Back</a>
             </div>
-        </div>
+        </div> -->
         
-    </div>
+    <!-- </div> -->
 </section>
 
 
-<script>
+<!-- <script>
     Chart.defaults.global.animationSteps = 50;
     Chart.defaults.global.tooltipYPadding = 16;
     Chart.defaults.global.tooltipCornerRadius = 0;
@@ -45,11 +45,10 @@
     Chart.defaults.global.responsive = false;
     Chart.defaults.global.scaleLineColor = "black";
     Chart.defaults.global.scaleFontSize = 16;
-
         
     // Data from JSON
     //var jsondata = {{ data|tojson }}
-    window.onload = generateGraph(timeFrame = "");
+    //window.onload = generateGraph(timeFrame = "");
 
     function generateGraph(timeFrame){
 
@@ -162,7 +161,8 @@
         });
         
     }
-</script>
+
+</script> -->
 {% endblock %}
 
 

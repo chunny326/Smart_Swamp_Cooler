@@ -1,21 +1,131 @@
 {% extends "base.html" %}
 
+{% block header %}
+
+<script src="static/Chart.min.js"></script>
+
+{% endblock %}
+
 {% block content %}
-<section id="home">
-    <div class="container py-5 mx-auto">
-        <div class="row">
-            <div class="col-6">
-                <a href="{{url_for('cooler_window')}}" class="btn btn-primary homeButton mb-2 btn-block">Start Cooler</a>
-                <a href="{{url_for('interval_window')}}" class="btn btn-info homeButton mt-2 btn-block">Interval</a>
+
+<section id="forecast">
+    <h3>Upcoming Forecast</h3>
+    <div class='forecastHeader'>
+        <div class='currentConditionsLeft'>
+            <div class="currentForecast">
+                <img src="{{currentIcon}}" width="100" height="100">
             </div>
-            <div class="col-6">
-                <a href="{{url_for('timer_window')}}" class="btn btn-secondary homeButton mb-2 btn-block" >Timer</a>
-                <a href="{{url_for('log_window')}}" class="btn btn-success homeButton mt-2 btn-block" >Log</a>
+            <div class="currentTemperature">
+                <h2>{{currentTemperature}}°</h2>
+            </div>
+        </div>
+        <div class='currentConditionsRight'>
+            <div class="currentTimeLocationAndCondition">
+                <h4>South Ogden, UT</h4>
+                <p>{{currentCommonTime}}</p>
+                <p>{{currentForecast}}</p>
             </div>
         </div>
     </div>
+    <div class='forecastCanvas'>
+        <canvas id="forecastChart" width="700" height="250"></canvas>
+    </div>
+    <div class='upcomingConditions'>
+        {% for day in upcomingWeekWeatherData %}
+        <div class="upcomingDay">
+            <p>{{day[0]}}</p>
+            <p>{{day[1]}}°</p>
+            <p>{{day[2]}}°</p>
+        </div>
+        {% endfor %}
+    </div>
 </section>
+<script>
 
+    Chart.defaults.global.animationSteps = 50;
+    Chart.defaults.global.tooltipYPadding = 16;
+    Chart.defaults.global.tooltipCornerRadius = 0;
+    Chart.defaults.global.tooltipTitleFontStyle = "normal";
+    Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
+    Chart.defaults.global.animationEasing = "easeOutBounce";
+    Chart.defaults.global.responsive = false;
+    Chart.defaults.global.scaleLineColor = "black";
+    Chart.defaults.global.scaleFontSize = 16;
+
+    // Data from JSON
+   
+    window.onload = generateGraph();
+
+    function generateGraph(){
+
+        var currentDate = new Date();
+        var commonTimes = ["12am", "1am", "2am", "3am", "4am", "5am", "6am", "7am", "8am", "9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm", "7pm", "8pm", "9pm", "10pm", "11pm"]
+        var labelSet = [];
+        var startingHour = currentDate.getHours();
+        var temperatureData = {{ temperatures }};
+
+        for(i = 0; i < 24; i++)
+        {
+            if(i % 4 == 3)
+            {
+                var index = startingHour + i;
+                if(index > 24)
+                    index = index - 24;
+                labelSet.push(commonTimes[index]);
+            }
+            else
+                labelSet.push("");
+        }
+
+        var forecastChartData = {
+            labels : labelSet,
+            datasets : [
+            //Inside Humidity Sensor
+            {
+                fillColor: "rgba(151,187,205,0.2)",
+                strokeColor: "rgba(151,187,205,1)",
+                pointColor: "rgba(151,187,205,1)",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(151,187,205,1)",
+                // backgroundColor: "rgba(255,165,0, 1)",
+                // borderColor:"rgba(255,165,0, 0.9)",
+                // fill: true,
+                bezierCurve : false,
+                data : temperatureData
+            }]
+        }
+
+        //Get graph canvases
+        var forecastGraph = document.getElementById("forecastChart").getContext("2d");
+
+        steps = 10
+        max = 10
+
+        // draw line graphs
+        var LineChartDemo = new Chart(forecastGraph, {
+            type: 'line',
+            data: forecastChartData,
+            fill: true,
+            options:{
+                legend:{
+                    display: false
+                }
+            },
+            scaleOverride: true,
+            scaleSteps: steps,
+            scaleStepWidth: Math.ceil(max / steps),
+            scaleStartValue: 0,
+            scaleShowVerticalLines: false,
+            scaleShowGridLines : false,
+            barShowStroke : true,
+            scaleShowLabels: true,
+            bezierCurve: false,
+        });
+        
+    }
+
+</script>
 
 {% endblock %}
 
