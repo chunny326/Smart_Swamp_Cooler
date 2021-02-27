@@ -185,6 +185,14 @@
     width: 26%;
   }
 
+  .currentDate{
+    display: inline-block;
+  }
+
+  .currentTime{
+    display: inline-block;
+  }
+
   .currentConditionsRight{
     display: inline-block;
     text-align: right;
@@ -211,12 +219,21 @@
 
   .upcomingConditions{
     margin-top: 5px;
+    border-left: solid 1px slategrey;
+    border-right: solid 1px slategrey;
+  }
+
+  .firstUpcomingDay{
+    display: inline-block;
+    width: 7%;
+    border-left: solid 1px slategrey;
+    border-right: solid 1px slategrey;
   }
 
   .upcomingDay{
     display: inline-block;
     width: 7%;
-    border-left: solid 1px slategrey;
+    border-right: solid 1px slategrey;
   }
 
   .highTemp{

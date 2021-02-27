@@ -3,6 +3,10 @@ from pathlib import Path
 import logging
 import json
 import io
+import geocoder
+import reverse_geocoder
+import datetime
+from datetime import datetime
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from flask import (Flask, render_template, url_for, make_response, request)
@@ -44,7 +48,14 @@ def retrieve_forecat_data():
     session = requests.Session()
     session.headers.update({'User-Agent': '(Smart Swamp Coooler Project, ronaldjensen@mail.weber.edu)'})
 
-    lat, lon = 41.138396, -112.029493
+    g=geocoder.ip('me')
+    lat, lon = g.latlng
+    coordinates = g.latlng
+    location = reverse_geocoder.search(coordinates)
+    print(location[0]['name'])
+    cityAndState = location[0]['name'] + ', ' + location[0]['admin1']
+    #print(cityAndState)
+    #lat, lon = 41.138396, -112.029493
     #lat, lon = 38.8894,-77.0352
 
 
@@ -74,9 +85,9 @@ def retrieve_forecat_data():
     # currentWindSpeed = None
     # currentWindDirection = None
     currentIcon = None
-    currentDate = None
     currentTime = None
     currentCommonTime = None
+
     commonTimeValues = [['12am', '00:00:00'],
                         ['1am', '01:00:00'],
                         ['2am', '02:00:00'],
@@ -116,25 +127,18 @@ def retrieve_forecat_data():
         next24HoursCollected = False
 
         for sample in periods:
-
+            print(sample['startTime'])
             if startDate == None:
                 time = sample['startTime'].split('T')
                 startDate = time[0]
-                currentDate = startDate
-                currentTime = time[1]
 
-                sampleDate = currentDate
+                sampleDate = time[0]
                 currentTemperature = sample['temperature']
                 # currentTemperatureUnit = sample['temperatureUnit']
                 currentForecast = sample['shortForecast']
                 # currentWindSpeed = sample['windSpeed']
                 # currentWindDirection = sample['windDirection']
                 currentIcon = sample['icon']
-
-                for commonTimeValue in commonTimeValues:
-                    if currentTime.split('-')[0] == commonTimeValue[1]:
-                        currentCommonTime = commonTimeValue[0]
-                        break
 
             similarPrediction = False
             for forecast in averageForecast:
@@ -179,7 +183,8 @@ def retrieve_forecat_data():
                 
                 print('Forecast Most Likely: ' + forecastMostLikely[0])
 
-                upcomingWeekWeatherData.append([sampleDate, dailyHigh, dailyLow, forecastMostLikely[2]])
+                formattedDate = datetime.strptime(sampleDate, '%Y-%m-%d').strftime('%m/%d')
+                upcomingWeekWeatherData.append([formattedDate, dailyHigh, dailyLow, forecastMostLikely[2]])
 
                 averageForecast = []
 
@@ -193,15 +198,24 @@ def retrieve_forecat_data():
             temperatures.append(hour[2])
             times.append(hour[1])
 
-    return temperatures, times, upcomingWeekWeatherData, currentCommonTime, currentTemperature, currentIcon, currentForecast
+    currentDate = datetime.now()
+    stringCurrentDate = currentDate.strftime('%m/%d')
+    stringCurrentTime = currentDate.strftime('%H:00:00')
+    for commonTimeValue in commonTimeValues:
+        if commonTimeValue[1] == stringCurrentTime:
+            currentCommonTime = commonTimeValue[0]
+
+    upcomingWeekLength = len(upcomingWeekWeatherData)
+
+    return temperatures, times, upcomingWeekWeatherData, upcomingWeekLength, currentCommonTime, currentTemperature, currentIcon, currentForecast, stringCurrentDate, cityAndState
 
 
 @app.route('/')
 def index():
 
-    temperatures, times, upcomingWeekWeatherData, currentCommonTime, currentTemperature, currentIcon, currentForecast = retrieve_forecat_data()
+    temperatures, times, upcomingWeekWeatherData, upcomingWeekLength, currentCommonTime, currentTemperature, currentIcon, currentForecast, currentDate, cityAndState = retrieve_forecat_data()
 
-    return render_template('main/index.html', title='Index', temperatures=temperatures, times=times, upcomingWeekWeatherData=upcomingWeekWeatherData, currentCommonTime=currentCommonTime, currentTemperature=currentTemperature, currentIcon=currentIcon, currentForecast=currentForecast)
+    return render_template('main/index.html', title='Index', temperatures=temperatures, times=times, upcomingWeekWeatherData=upcomingWeekWeatherData, upcomingWeekLength=upcomingWeekLength, currentCommonTime=currentCommonTime, currentTemperature=currentTemperature, currentIcon=currentIcon, currentForecast=currentForecast, currentDate=currentDate, cityAndState=cityAndState)
 
 @app.route("/log")
 def log_window():

@@ -16,13 +16,14 @@
                 <img src="{{currentIcon}}" width="100" height="100">
             </div>
             <div class="currentTemperature">
-                <h2>{{currentTemperature}}°</h2>
+                <h2>{{currentTemperature}}° F</h2>
             </div>
         </div>
         <div class='currentConditionsRight'>
             <div class="currentTimeLocationAndCondition">
-                <h4>South Ogden, UT</h4>
-                <p>{{currentCommonTime}}</p>
+                <h4>{{cityAndState}}</h4>
+                <p class='currentDate'>{{currentDate}}</p>
+                <p class='currentTime'>{{currentCommonTime}}</p>
                 <p>{{currentForecast}}</p>
             </div>
         </div>
@@ -31,11 +32,16 @@
         <canvas id="forecastChart" width="700" height="250"></canvas>
     </div>
     <div class='upcomingConditions'>
-        {% for day in upcomingWeekWeatherData %}
+        <div class="firstUpcomingDay">
+            <p>{{upcomingWeekWeatherData[0][0]}}</p>
+            <p><strong>{{upcomingWeekWeatherData[0][1]}}° F</strong></p>
+            <p>{{upcomingWeekWeatherData[0][2]}}° F</p>
+        </div>
+        {% for i in range(1, upcomingWeekLength)%}
         <div class="upcomingDay">
-            <p>{{day[0]}}</p>
-            <p>{{day[1]}}°</p>
-            <p>{{day[2]}}°</p>
+            <p>{{upcomingWeekWeatherData[i][0]}}</p>
+            <p><strong>{{upcomingWeekWeatherData[i][1]}}° F</strong></p>
+            <p>{{upcomingWeekWeatherData[i][2]}}° F</p>
         </div>
         {% endfor %}
     </div>
@@ -69,7 +75,7 @@
             if(i % 4 == 3)
             {
                 var index = startingHour + i;
-                if(index > 24)
+                if(index >= 24)
                     index = index - 24;
                 labelSet.push(commonTimes[index]);
             }
@@ -121,8 +127,7 @@
             barShowStroke : true,
             scaleShowLabels: true,
             bezierCurve: false,
-        });
-        
+        });  
     }
 
 </script>
