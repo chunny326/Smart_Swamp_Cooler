@@ -31,6 +31,7 @@ import json
 import re
 import time
 import serial
+import libs
 import RPi.GPIO as GPIO
 from gpiozero import LED
 from datetime import datetime
@@ -142,6 +143,15 @@ SQL_SELECT_COOLER_SETTING = """
 SQL_INSERT_SETTINGS = """
  INSERT INTO cooler_settings (timestamp, setting)
  VALUES (NOW(), %s)
+"""
+
+# Select most recent entry for given sensor ID
+SQL_SELECT_RECENT_SENSOR_DATA = """
+  SELECT *
+  FROM sensor_data
+  WHERE sensor_id=%s
+  ORDER BY timestamp
+  DESC LIMIT 1
 """
 
 # Maps database data to sensor_data object
@@ -310,9 +320,41 @@ def get_cooler_setting():
     #print("SETTING: ", data[0]["setting"])
     return data[0]["setting"]
 
-# fancy algorithm
-def get_auto_setting():
-    return "Fan Lo"
+# retrieve most recent temp/hum/timestamp data from database
+def get_recent_data(sensor_name=""):
+  # creating a connection cursor
+  mycursor = smartswampcooler_db.cursor()
+  
+  if sensor_name == "roof":
+    params = (ROOF_SENSOR_ID,)
+  elif sensor_name == "home":
+    params = (HOME_SENSOR_ID,)
+  else:
+    print("ERROR: Invalid sensor name: {}".format(sensor_name))
+    print("Specify valid sensor name: 'roof' or 'home'\n")
+    return -1
+  
+  # retrieve most recent data
+  mycursor.execute(SQL_SELECT_RECENT_SENSOR_DATA, params)
+  
+  # this will extract row headers
+  row_headers = [x[0] for x in mycursor.description] 
+  myresult = mycursor.fetchall()
+
+  # convert SQL entry to Python dict object
+  json_data = []
+  for result in myresult:
+    json_data.append(dict(zip(row_headers,result)))
+
+  data = json.dumps(json_data, indent=4, sort_keys=True, default=str)
+  data = json.loads(data)
+  
+  # print out all json data entries
+  for i in range(len(data)):
+      #print(data[i])
+      sensor_data = map_to_object(data[i])
+  
+  return sensor_data
     
 def set_cooler(setting):
     if setting[0:4] == 'Auto':
@@ -321,10 +363,18 @@ def set_cooler(setting):
         # get old setting to see if database setting needs to be updated
         temp = setting[5:]
         #print('Old Setting: ' + temp + '\n')
+        
         # call smart algorithm to determine appropriate cooler setting
-        setting = get_auto_setting()
+        # feed in most recent temperature/humidity readings from sensors
+        recent_roof_data = get_recent_data(sensor_name="roof")
+        recent_home_data = get_recent_data(sensor_name="home")
+        
+        setting = libs.get_auto_setting(recent_roof_data.temperature, recent_roof_data.humidity,\
+                                        recent_home_data.temperature, recent_home_data.humidity,\
+                                        desired_temp=65)
         #print('New Setting: ' + setting)
-        # TODO: only write to the database every 15 minutes OR if setting changes
+        
+        # only write to the database if setting changes
         if setting != temp:
             write_setting_db('Auto ' + setting)
     if setting == 'Off':
@@ -368,7 +418,8 @@ def set_cooler(setting):
 
 if __name__== "__main__":
     
-  while(1):    
+  while(1):
+    sensor_data = SensorData()
     raw_xb_data = wait_for_serial_response(10)
     
     if raw_xb_data != b"":
