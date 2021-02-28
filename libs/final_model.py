@@ -9,13 +9,18 @@ Last Modified on Feb 27 13:27:02 2021
 import os, sys
 
 local_module_path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'libs')
-print(local_module_path)
 sys.path.append(local_module_path)
 
 from .cooler_model import *
 from .Environment import Environment
 import numpy as np
 import pandas as pd
+import logging
+
+logger = logging.getLogger('AutoSettings') 
+
+def get_auto_setting_debug(level):
+    logger.setLevel(level)
 
 def get_auto_setting(T_amb, rh_amb, T_in, rh_in, desired_temp=75):
     '''Inside and outside temperatures are obtained, 
@@ -26,8 +31,11 @@ def get_auto_setting(T_amb, rh_amb, T_in, rh_in, desired_temp=75):
     
     # get outside temperature and RH
     # for now, just hard code something, note: temperature in Kelvin here
-    T_ambient =[c2k( f2c( T_amb ) ), 302.3, 304.5, 306.4, 307.8, 308.7, 309.0, 308.7, 307.8, 306.4, 304.5, 302.3, 300.0, 297.7, 295.5, 293.6, 292.2, 291.3, 291.0, 291.3, 292.2, 293.6, 295.5, 297.7, 300.0]
-    rh_ambient=[rh_amb, 25, 25, 25, 25, 25, 25, 26, 27, 28, 29, 30, 31, 29, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27]
+    if isinstance(T_amb, list):
+        T_ambient = [c2k( f2c(x)) for x in T_amb]
+    else:
+        T_ambient = c2k( f2c( T_amb ) )
+    rh_ambient= rh_amb
     T_house = c2k( f2c( T_in ) )
     rh_house = rh_in
 
@@ -55,29 +63,32 @@ def get_auto_setting(T_amb, rh_amb, T_in, rh_in, desired_temp=75):
     # loop over modes
     best_mode = 'Off'
     best_score = 99999
+    best_next_T = 0
     for mode in modes:
         if mode == 'Pump': break
-        print(mode, T_house, rh_house)
+        logger.info( 'Mode: {}, House: Temp {:0.1f}, Rh {:0.1f}, Ambient: Temp {}, Rh {}'.format(mode, T_house, rh_house, T_ambient, rh_ambient ) )
         result=forecast_inside_conditions(4, 
                                    modes[mode]['fan'], modes[mode]['pump'],
                                    T_ambient, rh_ambient,
                                    T_house, rh_house, v_dot_air, house_vol
                                    )
         score = sum((result.T_house - desired_temp )**2)
-        print( (result.T_house - desired_temp )**2)
-        print(score)
-        print("\n")
+        logger.debug( 'Score at time steps\n{}'.format ( (result.T_house - desired_temp )**2 ) )
+        logger.debug( 'Temperature at time steps\n{}'.format ( result ) )
+        logger.info( 'Final Score {}'.format(score) )
+
         if score < best_score:
             best_score = score
             best_mode = mode
+            best_next_T = result.T_house[0]
     
     # score and return result
-
+    logger.info('Next inside temperature: {}'.format(c2f(k2c( best_next_T ))))
     return best_mode
 
 def forecast_inside_conditions(t, fan, pump, T_ambient, rh_ambient, 
                                T_house, rh_house, v_dot_air, v_house,
-                               dt = 15, cooler_efficiency = 0.744):
+                               dt = 5, cooler_efficiency = 0.744):
     '''
     Forecast condtions inside the house 
 
@@ -134,12 +145,12 @@ def forecast_inside_conditions(t, fan, pump, T_ambient, rh_ambient,
         house.remove(exhaust.vol)
         house.mix(exhaust)
 #        print(house.__dict__)
-        result.append( (i, T_ambient[i], rh_ambient[i], T_exhaust, rh_exhaust, house.tem, house.rh) )
+        result.append( (i, T_ambient[i], rh_ambient[i], T_exhaust, rh_exhaust, v_dot_air[fan] * dt, house.tem, house.rh) )
         # time = time + deltat 
 
     ## T(t) = T0 + dT/dt (t)
 
-    return pd.DataFrame(result, columns = ('time', 'T_amb',  'rh_amb', 'T_ext',  'rh_ext', 'T_house', 'rh_house') )
+    return pd.DataFrame(result, columns = ('time', 'T_amb',  'rh_amb', 'T_ext',  'rh_ext', 'Flow', 'T_house', 'rh_house') )
 
 if __name__ == '__main__':
     print(get_auto_setting())

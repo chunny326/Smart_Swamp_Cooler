@@ -1,11 +1,16 @@
+import logging
 import libs
 
+
+
 def test_desired_temp():
+    libs.get_auto_setting_debug(logging.WARN)
     # Desired Temp, Outside Temp, Inside Temp, Expected Result
     test_data = [ {"desired_T": 75, "out_T": 90, "in_T": 90, "out_rh": 30, "in_rh": 30, "result": "Fan w/Pump"},
                   {"desired_T": 75, "out_T": 90, "in_T": 60, "out_rh": 30, "in_rh": 30, "result": "Fan"},
                   {"desired_T": 75, "out_T": 60, "in_T": 90, "out_rh": 30, "in_rh": 30, "result": "Fan"},
-                  {"desired_T": 75, "out_T": 60, "in_T": 60, "out_rh": 30, "in_rh": 30, "result": "Off"},] 
+                  {"desired_T": 75, "out_T": 60, "in_T": 60, "out_rh": 30, "in_rh": 30, "result": "Off"},
+                  ] 
     
     for data in test_data:
         setting = libs.get_auto_setting(data["out_T"], data["out_rh"],\
