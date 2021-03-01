@@ -1,7 +1,7 @@
 """
-Author: Jayden Smith
+Authors: Jayden Smith & Maxwell Cox
 
-Last Modified: February 8, 2021
+Last Modified: February 27, 2021
 
 ECE 4020 - Senior Project II
 
@@ -15,6 +15,13 @@ import json
 import io
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+import requests
+from pathlib import Path
+import logging
+import geocoder
+import reverse_geocoder
+import datetime
+from datetime import datetime
 
 global numDays
 numDays = 14
@@ -231,13 +238,173 @@ def write_db(coolerSet):
   
     print("{} record(s) affected".format(mycursor.rowcount))
   
+def retrieve_forecast_data():
+    temperatures = []
+    times = []
+
+    logging.basicConfig(level=logging.WARNING)
+    session = requests.Session()
+    session.headers.update({'User-Agent': '(Smart Swamp Cooler Project, ronaldjensen@mail.weber.edu)'})
+
+    g=geocoder.ip('me')
+    lat, lon = g.latlng
+    coordinates = g.latlng
+    location = reverse_geocoder.search(coordinates)
+    #print(location[0]['name'])
+    cityAndState = location[0]['name'] + ', ' + location[0]['admin1']
+
+    request_string = 'https://api.weather.gov/points/{lat:0.3f},{lon:0.3f}'.format(lat=lat, lon=lon)
+   # print('get '+request_string)
+
+    response=session.get(request_string, timeout=(5, 60)) # wait 5 seconds
+
+    if response.ok:
+        points_data = json.loads(response.content)
+        forecast_request = points_data['properties']['forecastHourly']
+
+    response=session.get(forecast_request, timeout=(5, 60)) # wait 5 seconds
+    #print(response)
+
+    startDate = None
+    currentTemperature = None
+    currentForecast = None
+    currentIcon = None
+    currentTime = None
+    currentCommonTime = None
+
+    commonTimeValues = [['12am', '00:00:00'],
+                        ['1am', '01:00:00'],
+                        ['2am', '02:00:00'],
+                        ['3am', '03:00:00'],
+                        ['4am', '04:00:00'],
+                        ['5am', '05:00:00'],
+                        ['6am', '06:00:00'],
+                        ['7am', '07:00:00'],
+                        ['8am', '08:00:00'],
+                        ['9am', '09:00:00'],
+                        ['10am', '10:00:00'],
+                        ['11am', '11:00:00'],
+                        ['12pm', '12:00:00'],
+                        ['1pm', '13:00:00'],
+                        ['2pm', '14:00:00'],
+                        ['3pm', '15:00:00'],
+                        ['4pm', '16:00:00'],
+                        ['5pm', '17:00:00'],
+                        ['6pm', '18:00:00'],
+                        ['7pm', '19:00:00'],
+                        ['8pm', '20:00:00'],
+                        ['9pm', '21:00:00'],
+                        ['10pm', '22:00:00'],
+                        ['11pm', '23:00:00']]
+
+    dailyHigh = None
+    dailyLow = None
+
+    nextTwentyFourHourWeatherData = []
+    upcomingWeekWeatherData = []
+    averageForecast = []
+
+    if response.ok:
+        forecast_data = json.loads(response.content)
+        periods = forecast_data['properties']['periods']
+
+        next24HoursCollected = False
+
+        for sample in periods:
+           # print(sample['startTime'])
+            if startDate == None:
+                time = sample['startTime'].split('T')
+                startDate = time[0]
+
+                sampleDate = time[0]
+                currentTemperature = sample['temperature']
+                currentForecast = sample['shortForecast']
+                currentIcon = sample['icon']
+
+            similarPrediction = False
+            for forecast in averageForecast:
+                if forecast[0] == sample['shortForecast']:
+                    forecast[1] += 1
+                    similarPrediction = True
+                    break
+            
+            if not similarPrediction:
+                averageForecast.append([sample['shortForecast'], 1, sample['icon']])
+
+            if currentTime != sample['endTime'].split('T')[1] and not next24HoursCollected:
+                for commonTimeValue in commonTimeValues:
+                    if sample['startTime'].split('T')[1].split('-')[0] == commonTimeValue[1]:
+                        nextTwentyFourHourWeatherData.append([sample['startTime'].split('T')[0].split('-')[0], commonTimeValue[0], sample['temperature']])
+            elif not next24HoursCollected:
+                for commonTimeValue in commonTimeValues:
+                    if sample['startTime'].split('T')[1].split('-')[0] == commonTimeValue[1]:
+                        nextTwentyFourHourWeatherData.append([sample['startTime'].split('T')[0].split('-')[0], commonTimeValue[0], sample['temperature']])
+                        next24HoursCollected = True
+
+            if sampleDate == sample['startTime'].split('T')[0]:
+                if dailyHigh == None:
+                    dailyHigh = sample['temperature']
+                elif sample['temperature'] > dailyHigh:
+                    dailyHigh = sample['temperature']
+                if dailyLow == None:    
+                    dailyLow = sample['temperature']
+                elif sample['temperature'] < dailyLow:
+                    dailyLow = sample['temperature']
+
+            else:
+           #     print('\n' + sampleDate)
+            #    print('High: ' + str(dailyHigh))
+             #   print('Low: ' + str(dailyLow))
+                forecastMostLikely = []
+
+                for forecast in averageForecast:
+          #          print(forecast)
+                    if len(forecastMostLikely) == 0 or forecastMostLikely[1] < forecast[1]:
+                        forecastMostLikely = forecast
+                
+         #       print('Forecast Most Likely: ' + forecastMostLikely[0])
+
+                formattedDate = datetime.strptime(sampleDate, '%Y-%m-%d').strftime('%m/%d')
+                upcomingWeekWeatherData.append([formattedDate, dailyHigh, dailyLow, forecastMostLikely[2]])
+
+                averageForecast = []
+
+                sampleDate = sample['startTime'].split('T')[0]
+                dailyHigh = sample['temperature']
+                dailyLow = sample['temperature']
+                
+        #print('\n')
+        #print(str(len(nextTwentyFourHourWeatherData)) + " Samples in next 24 hours")
+        for hour in nextTwentyFourHourWeatherData:
+            temperatures.append(hour[2])
+            times.append(hour[1])
+
+    currentDate = datetime.now()
+    stringCurrentDate = currentDate.strftime('%m/%d')
+    stringCurrentTime = currentDate.strftime('%H:00:00')
+    for commonTimeValue in commonTimeValues:
+        if commonTimeValue[1] == stringCurrentTime:
+            currentCommonTime = commonTimeValue[0]
+
+    upcomingWeekLength = len(upcomingWeekWeatherData)
+
+    return temperatures, times, upcomingWeekWeatherData, upcomingWeekLength, currentCommonTime, currentTemperature, currentIcon, currentForecast, stringCurrentDate, cityAndState
+
+
+
 @app.route("/")
 def index():
+    # recent sensor readings
     recent_roof_data = SensorData()
     recent_home_data = SensorData()
     recent_roof_data = getRecentData(sensor_name="roof")
     recent_home_data = getRecentData(sensor_name="home")
     coolerSetting = get_cooler_setting()
+    
+    # displaying forecast
+    temperatures, times, upcomingWeekWeatherData, upcomingWeekLength,\
+        currentCommonTime, currentTemperature, currentIcon,\
+        currentForecast, currentDate, cityAndState = retrieve_forecast_data()
     
     templateData = {
         'time_roof': recent_roof_data.timestamp,
@@ -247,8 +414,19 @@ def index():
         'temp_home': recent_home_data.temperature,
         'hum_home': recent_home_data.humidity,
         'num_days': numDays,
-        'cooler_setting': coolerSetting
+        'cooler_setting': coolerSetting,
+        'temperatures': temperatures,
+        'times': times, 
+        'upcomingWeekWeatherData': upcomingWeekWeatherData, 
+        'upcomingWeekLength': upcomingWeekLength,
+        'currentCommonTime': currentCommonTime, 
+        'currentTemperature': currentTemperature,
+        'currentIcon': currentIcon,
+        'currentForecast': currentForecast,
+        'currentDate': currentDate,
+        'cityAndState': cityAndState
     }
+    
     return render_template('main/index.html', **templateData)
 
 @app.route('/', methods=['POST'])
@@ -270,6 +448,11 @@ def my_form_post():
     recent_roof_data = getRecentData(sensor_name="roof")
     recent_home_data = getRecentData(sensor_name="home")
     
+    # displaying forecast
+    temperatures, times, upcomingWeekWeatherData, upcomingWeekLength,\
+        currentCommonTime, currentTemperature, currentIcon,\
+        currentForecast, currentDate, cityAndState = retrieve_forecast_data()
+    
     templateData = {
         'time_roof': recent_roof_data.timestamp,
         'temp_roof': recent_roof_data.temperature,
@@ -278,8 +461,19 @@ def my_form_post():
         'temp_home': recent_home_data.temperature,
         'hum_home': recent_home_data.humidity,
         'num_days': numDays,
-        'cooler_setting': coolerSetting
+        'cooler_setting': coolerSetting,
+        'temperatures': temperatures,
+        'times': times, 
+        'upcomingWeekWeatherData': upcomingWeekWeatherData, 
+        'upcomingWeekLength': upcomingWeekLength,
+        'currentCommonTime': currentCommonTime, 
+        'currentTemperature': currentTemperature,
+        'currentIcon': currentIcon,
+        'currentForecast': currentForecast,
+        'currentDate': currentDate,
+        'cityAndState': cityAndState
     }
+    
     return render_template('main/index.html', **templateData)
 
 @app.route('/plot/temp_roof')

@@ -1,36 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title> Sensor Data </title>
-    <link rel="stylesheet" href='../static/style.css'/>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="refresh" content="300" >
-    <style>
-        body {
-	    text-align: center;
-	}
-        #g1,
-        #g2,
-	#g3,
-	#g4 {
-            width: 400px;
-	    height: 320px;
-	    display: inline-block;
-	    margin: 1em;
-	}
-    </style>
-</head>
-<body>
-    <h1> Outside Sensor Data </h1>
-    <div id="g1"></div>
-    <div id="g2"></div>
+{% extends "base.html" %}
+
+{% block header %}
+
+<script src="static/Chart.min.js"></script>
+<meta http-equiv="refresh" content="300">
+
+{% endblock %}
+
+{% block content %}
+  <div class="sensor_data">
     <h1> Inside Sensor Data </h1>
     <div id="g3"></div>
     <div id="g4"></div>
+    <br>
+    <span><a href="/"class="button">{{ time_roof }}</a></span>
+  </div>
+  <div class="sensor_data">
+    <h1> Outside Sensor Data </h1>
+    <div id="g1"></div>
+    <div id="g2"></div>
+    <br>
+    <span><a href="/"class="button">{{ time_home }}</a></span>		
+  </div>
     <hr>
-	<h3> Last Outside Sensor Reading: {{ time_roof }} ==> <a href="/"class="button">REFRESH</a></h3>
-	<h3> Last Inside Sensor Reading: {{ time_home }} ==> <a href="/"class="button">REFRESH</a></h3>		
-    <hr>
+  <div class="cooler_settings">
 	<br>
 	<h3>Current Cooler Setting: {{ cooler_setting }} </h3>
 	<h3>Change Cooler Setting:</h3>
@@ -53,7 +46,48 @@
 	</form>
 	<br> 
 	<br>
+   </div>
 	<hr>
+   <section class="forecast">
+    <h3>Upcoming Forecast</h3>
+    <div class='forecastHeader'>
+        <div class='currentConditionsLeft'>
+            <div class="currentForecast">
+                <img src="{{currentIcon}}" width="100" height="100">
+            </div>
+            <div class="currentTemperature">
+                <h3>{{currentTemperature}}° F</h3>
+            </div>
+        </div>
+        <div class='currentConditionsRight'>
+            <div class="currentTimeLocationAndCondition">
+                <h4>{{cityAndState}}</h4>
+                <p class='currentDate'>{{currentDate}}</p>
+                <p class='currentTime'>{{currentCommonTime}}</p>
+                <p>{{currentForecast}}</p>
+            </div>
+        </div>
+    </div>
+    <div class='forecastCanvas'>
+        <canvas id="forecastChart" width="700" height="250"></canvas>
+    </div>
+    <div class='upcomingConditions'>
+        <div class="firstUpcomingDay">
+            <p>{{upcomingWeekWeatherData[0][0]}}</p>
+            <p><strong>{{upcomingWeekWeatherData[0][1]}}° F</strong></p>
+            <p>{{upcomingWeekWeatherData[0][2]}}° F</p>
+        </div>
+        {% for i in range(1, upcomingWeekLength)%}
+        <div class="upcomingDay">
+            <p>{{upcomingWeekWeatherData[i][0]}}</p>
+            <p><strong>{{upcomingWeekWeatherData[i][1]}}° F</strong></p>
+            <p>{{upcomingWeekWeatherData[i][2]}}° F</p>
+        </div>
+        {% endfor %}
+    </div>
+   </section>
+	<hr>
+   <div class="log_data">
 	<br>
 	<h3> Showing last {{ num_days }} day(s) of temperature/humidity readings </h3>
 	<h3> Change # of Days: </h3>
@@ -80,8 +114,8 @@
 	<hr>
 	<img src="/plot/temp_home" alt="Image Placeholder" width="49%">
 	<img src="/plot/hum_home" alt="Image Placeholder" width="49%">
-	<h4> Time given as YYYY-MM-DD or MM-DD Military Time for 1-day plot </h4> 
-	<p> @2021 Developed by Jayden Smith </p>
+	<h4> Time given as YYYY-MM-DD or MM-DD 24-hour clock for 1-day plot </h4> 
+    </div>
     
     <script src="../static/raphael-2.1.4.min.js"></script>
     <script src="../static/justgage.js"></script>
@@ -125,6 +159,86 @@
 		label: "%"
 	});
       });
-    </script>
-</body>
-</html>
+   </script>
+   <script>
+    Chart.defaults.global.animationSteps = 50;
+    Chart.defaults.global.tooltipYPadding = 16;
+    Chart.defaults.global.tooltipCornerRadius = 0;
+    Chart.defaults.global.tooltipTitleFontStyle = "normal";
+    Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
+    Chart.defaults.global.animationEasing = "easeOutBounce";
+    Chart.defaults.global.responsive = false;
+    Chart.defaults.global.scaleLineColor = "black";
+    Chart.defaults.global.scaleFontSize = 16;
+   
+    window.onload = generateGraph();
+
+    function generateGraph(){
+
+        var currentDate = new Date();
+        var commonTimes = ["12am", "1am", "2am", "3am", "4am", "5am", "6am", "7am", "8am", "9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm", "7pm", "8pm", "9pm", "10pm", "11pm"]
+        var labelSet = [];
+        var startingHour = currentDate.getHours();
+        var temperatureData = {{ temperatures }};
+
+        for(i = 0; i < 24; i++)
+        {
+            if(i % 4 == 3)
+            {
+                var index = startingHour + i;
+                if(index >= 24)
+                    index = index - 24;
+                labelSet.push(commonTimes[index]);
+            }
+            else
+                labelSet.push("");
+        }
+
+        var forecastChartData = {
+            labels : labelSet,
+            datasets : [
+            {
+                fillColor: "rgba(151,187,205,0.2)",
+                strokeColor: "rgba(151,187,205,1)",
+                pointColor: "rgba(151,187,205,1)",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(151,187,205,1)",
+                backgroundColor: "rgba(255,165,0, 0.5)",
+                borderColor:"rgba(255,165,0, 1)",
+                fill: true,
+                bezierCurve : false,
+                data : temperatureData
+            }]
+        }
+
+        //Get graph canvases
+        var forecastGraph = document.getElementById("forecastChart").getContext("2d");
+
+        steps = 10
+        max = 10
+
+        // draw line graphs
+        var LineChartDemo = new Chart(forecastGraph, {
+            type: 'line',
+            data: forecastChartData,
+            fill: true,
+            options:{
+                legend:{
+                    display: false
+                }
+            },
+            scaleOverride: true,
+            scaleSteps: steps,
+            scaleStepWidth: Math.ceil(max / steps),
+            scaleStartValue: 0,
+            scaleShowVerticalLines: false,
+            scaleShowGridLines : false,
+            barShowStroke : true,
+            scaleShowLabels: true,
+            bezierCurve: false,
+        });  
+    }
+  </script>
+
+{% endblock %}

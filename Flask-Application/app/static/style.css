@@ -1,19 +1,145 @@
 body{
-	background: #FFF;
-	padding:1%;
-	font-size: 50px 
+    background: #FFF;
+    padding:1%;
+    font-size: 50px;
+    text-align: center;
 }
-.button {
-	font: bold 50px Arial;
-	text-decoration: none;
-	background-color: #150717;
-	color: #FFF;
-	padding: 2px 6px 2px 6px;
-	border-top: 1px solid #0F0717;
-	border-right: 1px solid #333333;
-	border-bottom: 1px solid #333333;
-	border-left: 1px solid #0F0717;
+
+.button{
+    font: bold 50px Arial;
+    text-decoration: none;
+    background-color: #150717;
+    color: #FFF;
+    padding: 2px 6px 2px 6px;
+    border-top: 1px solid #0F0717;
+    border-right: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+    border-left: 1px solid #0F0717;
 }
+
+.cooler_settings, .sensor_data, .log_data{
+    text-align: center;
+}
+
+.sensor_data h1{
+    font-size: 2em;
+    font-weight: bold;
+    margin-top: 0.67em;
+}
+
+.cooler_settings h3{
+    font-size: 1.17em;
+    font-weight: bold;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+#g1,
+#g2,
+#g3,
+#g4 {
+    width: 400px;
+    height: 320px;
+    display: inline-block;
+    margin: 1em;
+}
+
 img{
-	display: display: inline-block
+    display: inline-block
 }
+
+.forecast h3{
+    font-size: 1.17em;
+    font-weight: bold;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.forecast h2{
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-top: 0.83em;
+    margin-bottom: 0.83em;
+}
+
+.forecastHeader{
+    margin-bottom: 5px;
+    text-align: center;
+    font-size: 1.5em;
+}
+
+.currentConditionsLeft{
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
+    width: 30%;
+    background-color: #F0F8FF;
+}
+
+.currentForecast{
+    display: inline-block;
+}
+
+.currentTemperature{
+    display: inline-block;
+    padding-left: 5px;
+}
+
+.currentTemperature h3{
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
+
+.currentConditionsRight{
+    display: inline-block;
+    text-align: right;
+    vertical-align: top;
+    width: 30%;
+    background-color: #FAEBD7;
+}
+
+.currentDate{
+    display: inline-block;
+}
+
+.currentTime{
+    display: inline-block;
+}
+
+.forecast p{
+    font-size: 16px;
+}
+
+canvas{
+    padding: 0;
+    margin: auto;
+    display: block;
+    width: 800px;
+}
+
+.upcomingConditions{
+    margin-top: 5px;
+    border-left: solid 1px slategrey;
+    border-right: solid 1px slategrey;
+}
+
+.firstUpcomingDay{
+    display: inline-block;
+    width: 7%;
+    border-left: solid 1px slategrey;
+    border-right: solid 1px slategrey;
+}
+
+.upcomingDay{
+    display: inline-block;
+    width: 7%;
+    border-right: solid 1px slategrey;
+}
+
+.highTemp{
+    display: inline;
+}
+
+.lowTemp{
+    display: inline;
+}*/  
