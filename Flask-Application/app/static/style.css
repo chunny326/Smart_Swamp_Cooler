@@ -112,11 +112,11 @@ img{
 }
 
 .forecast p{
-    font-size: 16px;
+    font-size: 30px;
 }
 
 .currentConditionsRight p{
-    font-size: 20px;
+    font-size: 30px;
     margin-top: 0.25em;
     margin-bottom: 0.25em;
 }
@@ -125,13 +125,10 @@ canvas{
     padding: 0;
     margin: auto;
     display: block;
-    width: 800px;
 }
 
 .upcomingConditions{
-    margin-top: 5px;
-    border-left: solid 1px slategrey;
-    border-right: solid 1px slategrey;
+    margin-top: 10px;
 }
 
 .firstUpcomingDay{
