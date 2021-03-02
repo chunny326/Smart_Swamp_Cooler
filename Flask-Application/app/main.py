@@ -272,30 +272,30 @@ def retrieve_forecast_data():
     currentTime = None
     currentCommonTime = None
 
-    commonTimeValues = [['12am', '00:00:00'],
-                        ['1am', '01:00:00'],
-                        ['2am', '02:00:00'],
-                        ['3am', '03:00:00'],
-                        ['4am', '04:00:00'],
-                        ['5am', '05:00:00'],
-                        ['6am', '06:00:00'],
-                        ['7am', '07:00:00'],
-                        ['8am', '08:00:00'],
-                        ['9am', '09:00:00'],
-                        ['10am', '10:00:00'],
-                        ['11am', '11:00:00'],
-                        ['12pm', '12:00:00'],
-                        ['1pm', '13:00:00'],
-                        ['2pm', '14:00:00'],
-                        ['3pm', '15:00:00'],
-                        ['4pm', '16:00:00'],
-                        ['5pm', '17:00:00'],
-                        ['6pm', '18:00:00'],
-                        ['7pm', '19:00:00'],
-                        ['8pm', '20:00:00'],
-                        ['9pm', '21:00:00'],
-                        ['10pm', '22:00:00'],
-                        ['11pm', '23:00:00']]
+    commonTimeValues = [['12:00 AM', '00:00:00'],
+                        ['1:00 AM', '01:00:00'],
+                        ['2:00 AM', '02:00:00'],
+                        ['3:00 AM', '03:00:00'],
+                        ['4:00 AM', '04:00:00'],
+                        ['5:00 AM', '05:00:00'],
+                        ['6:00 AM', '06:00:00'],
+                        ['7:00 AM', '07:00:00'],
+                        ['8:00 AM', '08:00:00'],
+                        ['9:00 AM', '09:00:00'],
+                        ['10:00 AM', '10:00:00'],
+                        ['11:00 AM', '11:00:00'],
+                        ['12:00 PM', '12:00:00'],
+                        ['1:00 PM', '13:00:00'],
+                        ['2:00 PM', '14:00:00'],
+                        ['3:00 PM', '15:00:00'],
+                        ['4:00 PM', '16:00:00'],
+                        ['5:00 PM', '17:00:00'],
+                        ['6:00 PM', '18:00:00'],
+                        ['7:00 PM', '19:00:00'],
+                        ['8:00 PM', '20:00:00'],
+                        ['9:00 PM', '21:00:00'],
+                        ['10:00 PM', '22:00:00'],
+                        ['11:00 PM', '23:00:00']]
 
     dailyHigh = None
     dailyLow = None
@@ -380,7 +380,34 @@ def retrieve_forecast_data():
             times.append(hour[1])
 
     currentDate = datetime.now()
-    stringCurrentDate = currentDate.strftime('%m/%d')
+    stringCurrentDate = currentDate.strftime('%B/%d')
+    
+    stringDay = stringCurrentDate.split('/')[1]
+    
+    if stringDay[0] == '0':
+        if stringDay[1] == '1':
+            stringDay = '1st'
+        elif stringDay[1] == '2':
+            stringDay = '2nd'
+        elif stringDay[3] == '3':
+            stringDay = '3rd'
+        else:
+            stringDay = stringDay[1] + 'th'
+            
+    elif stringDay[0] == '2' or stringDay[0] == '3':
+        if stringDay[1] == '1':
+            stringDay = stringDay + 'st'
+        elif stringDay[1] == '2':
+            stringDay = stringDay + 'nd'
+        elif stringDay[3] == '3':
+            stringDay = stringDay + 'rd'
+        else:
+            stringDay = stringDay + 'th'
+    else:
+        stringDay = stringDay + 'th'
+    
+    stringCurrentDate = stringCurrentDate.split('/')[0] + ' ' + stringDay
+    
     stringCurrentTime = currentDate.strftime('%H:00:00')
     for commonTimeValue in commonTimeValues:
         if commonTimeValue[1] == stringCurrentTime:

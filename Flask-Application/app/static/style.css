@@ -62,9 +62,15 @@ img{
     margin-bottom: 0.83em;
 }
 
+.forecast h6{
+    font-size: 0.25em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+}
+
 .forecastHeader{
     margin-bottom: 5px;
-    text-align: center;
     font-size: 1.5em;
 }
 
@@ -73,7 +79,6 @@ img{
     text-align: left;
     vertical-align: top;
     width: 30%;
-    background-color: #F0F8FF;
 }
 
 .currentForecast{
@@ -95,19 +100,25 @@ img{
     text-align: right;
     vertical-align: top;
     width: 30%;
-    background-color: #FAEBD7;
 }
 
-.currentDate{
-    display: inline-block;
-}
-
-.currentTime{
-    display: inline-block;
+.forecast h4{
+    display: block;
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
 }
 
 .forecast p{
     font-size: 16px;
+}
+
+.currentConditionsRight p{
+    font-size: 20px;
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
 }
 
 canvas{
@@ -142,4 +153,19 @@ canvas{
 
 .lowTemp{
     display: inline;
-}*/  
+}
+
+.log_data h3{
+    font-size: 1.17em;
+    font-weight: bold;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.log_data h4{
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+}
