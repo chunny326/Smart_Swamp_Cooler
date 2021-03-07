@@ -166,3 +166,24 @@ canvas{
     margin-right: 0;
     font-weight: bold;
 }
+
+.currentSelection {
+    color: #1E90FF;
+    font-size: 1.25em;
+}
+
+.desiredTemperature{
+    display: block;
+}
+
+#desiredTemp{
+    width: 50%;
+}
+
+#desiredTemperatureValue{
+    margin-top: 5px;
+    text-align: center;
+    width: 10%;
+    border: none;
+    border-color: transparent;
+}

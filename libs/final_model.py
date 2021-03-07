@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jan 16 14:05:03 2021
-Last Modified on Feb 27 13:27:02 2021
+Last Modified on Mar 6 17:36:12 2021
 
 @author: rjensen, jlimondo
 """
@@ -22,7 +22,7 @@ logger = logging.getLogger('AutoSettings')
 def get_auto_setting_debug(level):
     logger.setLevel(level)
 
-def get_auto_setting(T_amb, rh_amb, T_in, rh_in, desired_temp=75):
+def get_auto_setting(T_amb, rh_amb, T_in, rh_in, house_settings, desired_temp=75):
     '''Inside and outside temperatures are obtained, 
     a simulation is then run in each of the five operating modes to determine
     the most suitable mode for operation. 
@@ -30,26 +30,26 @@ def get_auto_setting(T_amb, rh_amb, T_in, rh_in, desired_temp=75):
     The most suitable mode is returned to the controller.'''
     
     # get outside temperature and RH
-    # for now, just hard code something, note: temperature in Kelvin here
+    # for now, just hard code something, note: temperature in Celsius here
     if isinstance(T_amb, list):
-        T_ambient = [c2k( f2c(x)) for x in T_amb]
+        T_ambient = [f2c(x) for x in T_amb]
     else:
-        T_ambient = c2k( f2c( T_amb ) )
+        T_ambient = f2c( T_amb )
     rh_ambient= rh_amb
-    T_house = c2k( f2c( T_in ) )
+    T_house = f2c( T_in )
     rh_house = rh_in
 
     rho_air = 0.00238 # slug/ft**3 (sea level)
 
     # get settings
     # Cooler parameters:
-    v_dot_air = (0, 70, 106) # ft**3/s, 0 for Off, 70 for Lo, 106 for Hi - based on cooler rating
+    v_dot_air = (0, house_settings.lo_fan_volume, house_settings.hi_fan_volume) # ft**3/s, 0 for Off, 70 for Lo, 106 for Hi - based on cooler rating
     m_dot_air = np.array(v_dot_air)*rho_air # kg/s
-    cooler_efficiency = 0.744
+    cooler_efficiency = house_settings.efficiency
     
     # House parameters:
-    house_vol = 10000 #ft**3
-    desired_temp = c2k( f2c( desired_temp ) ) # kelvin
+    house_vol = house_settings.house_volume #ft**3
+    desired_temp = f2c( desired_temp ) # Celsius
     
     modes={
         'Off':            {'fan':0, 'pump':0},

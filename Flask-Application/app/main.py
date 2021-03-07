@@ -60,8 +60,8 @@ SQL_SELECT_RECENT_DATA = """
 
 # Insert new row of Cooler Settings
 SQL_INSERT_SETTINGS = """
- INSERT INTO cooler_settings (timestamp, setting)
- VALUES (NOW(), %s)
+ INSERT INTO cooler_settings (timestamp, setting, desiredTemperature)
+ VALUES (NOW(), %s, %s)
 """
 
 # Select most recent entry for cooler setting
@@ -196,7 +196,7 @@ def get_cooler_setting():
     data = json.dumps(json_data, sort_keys=True, default=str)
     data = json.loads(data)
     
-    return data[0]["setting"]
+    return data[0]["setting"], data[0]["desiredTemperature"] 
     
 def plot_sensor(data, time, loc='inside', sensor='temperature'):
     ys = data
@@ -227,12 +227,12 @@ def plot_sensor(data, time, loc='inside', sensor='temperature'):
     return response
 
 # Insert newest cooler setting to the database
-def write_db(coolerSet):
+def write_db(coolerSet, desiredTemperature):
     print("Inserting new cooler setting data...")
     
     mycursor = mysql.new_cursor()
 
-    params = (coolerSet,)
+    params = (coolerSet, desiredTemperature,)
     mycursor.execute(SQL_INSERT_SETTINGS, params)
     mysql.connection.commit()
   
@@ -248,13 +248,13 @@ def retrieve_forecast_data():
 
     g=geocoder.ip('me')
     lat, lon = g.latlng
+    
     coordinates = g.latlng
     location = reverse_geocoder.search(coordinates)
-    #print(location[0]['name'])
+    
     cityAndState = location[0]['name'] + ', ' + location[0]['admin1']
 
     request_string = 'https://api.weather.gov/points/{lat:0.3f},{lon:0.3f}'.format(lat=lat, lon=lon)
-   # print('get '+request_string)
 
     response=session.get(request_string, timeout=(5, 60)) # wait 5 seconds
 
@@ -263,7 +263,6 @@ def retrieve_forecast_data():
         forecast_request = points_data['properties']['forecastHourly']
 
     response=session.get(forecast_request, timeout=(5, 60)) # wait 5 seconds
-    #print(response)
 
     startDate = None
     currentTemperature = None
@@ -311,7 +310,6 @@ def retrieve_forecast_data():
         next24HoursCollected = False
 
         for sample in periods:
-           # print(sample['startTime'])
             if startDate == None:
                 time = sample['startTime'].split('T')
                 startDate = time[0]
@@ -352,17 +350,11 @@ def retrieve_forecast_data():
                     dailyLow = sample['temperature']
 
             else:
-           #     print('\n' + sampleDate)
-            #    print('High: ' + str(dailyHigh))
-             #   print('Low: ' + str(dailyLow))
                 forecastMostLikely = []
 
                 for forecast in averageForecast:
-          #          print(forecast)
                     if len(forecastMostLikely) == 0 or forecastMostLikely[1] < forecast[1]:
                         forecastMostLikely = forecast
-                
-         #       print('Forecast Most Likely: ' + forecastMostLikely[0])
 
                 formattedDate = datetime.strptime(sampleDate, '%Y-%m-%d').strftime('%m/%d')
                 upcomingWeekWeatherData.append([formattedDate, dailyHigh, dailyLow, forecastMostLikely[2]])
@@ -373,8 +365,6 @@ def retrieve_forecast_data():
                 dailyHigh = sample['temperature']
                 dailyLow = sample['temperature']
                 
-        #print('\n')
-        #print(str(len(nextTwentyFourHourWeatherData)) + " Samples in next 24 hours")
         for hour in nextTwentyFourHourWeatherData:
             temperatures.append(hour[2])
             times.append(hour[1])
@@ -389,7 +379,7 @@ def retrieve_forecast_data():
             stringDay = '1st'
         elif stringDay[1] == '2':
             stringDay = '2nd'
-        elif stringDay[3] == '3':
+        elif stringDay[1] == '3':
             stringDay = '3rd'
         else:
             stringDay = stringDay[1] + 'th'
@@ -399,7 +389,7 @@ def retrieve_forecast_data():
             stringDay = stringDay + 'st'
         elif stringDay[1] == '2':
             stringDay = stringDay + 'nd'
-        elif stringDay[3] == '3':
+        elif stringDay[1] == '3':
             stringDay = stringDay + 'rd'
         else:
             stringDay = stringDay + 'th'
@@ -426,7 +416,7 @@ def index():
     recent_home_data = SensorData()
     recent_roof_data = getRecentData(sensor_name="roof")
     recent_home_data = getRecentData(sensor_name="home")
-    coolerSetting = get_cooler_setting()
+    coolerSetting, desiredTemperature = get_cooler_setting()
     
     # displaying forecast
     temperatures, times, upcomingWeekWeatherData, upcomingWeekLength,\
@@ -442,6 +432,7 @@ def index():
         'hum_home': recent_home_data.humidity,
         'num_days': numDays,
         'cooler_setting': coolerSetting,
+        'desired_temp': desiredTemperature,
         'temperatures': temperatures,
         'times': times, 
         'upcomingWeekWeatherData': upcomingWeekWeatherData, 
@@ -459,6 +450,9 @@ def index():
 @app.route('/', methods=['POST'])
 def my_form_post():
     req_form = dict(request.form)
+    coolerSetting = None
+    desiredTemperature = None
+    
     if 'numDays' in req_form:
         #print("Setting numDays\n")
         global numDays
@@ -468,7 +462,8 @@ def my_form_post():
         #print("Setting coolerSetting\n")
         #global coolerSetting
         coolerSetting = request.form.get('coolerSetting')
-        write_db(coolerSetting)
+        desiredTemperature = request.form.get('desiredTemperature')
+        write_db(coolerSetting, desiredTemperature)
         
     recent_roof_data = SensorData()
     recent_home_data = SensorData()
@@ -489,6 +484,7 @@ def my_form_post():
         'hum_home': recent_home_data.humidity,
         'num_days': numDays,
         'cooler_setting': coolerSetting,
+        'desired_temp': desiredTemperature,
         'temperatures': temperatures,
         'times': times, 
         'upcomingWeekWeatherData': upcomingWeekWeatherData, 

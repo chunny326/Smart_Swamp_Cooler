@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="sensor_data">
+  <div class="+">
     <h1> Inside Sensor Data </h1>
     <div id="g3"></div>
     <div id="g4"></div>
@@ -25,7 +25,7 @@
     <hr>
   <div class="cooler_settings">
 	<br>
-	<h3>Current Cooler Setting: {{ cooler_setting }} </h3>
+	<h3>Current Cooler Setting: <span class="currentSelection">{{ cooler_setting }}</span></h3>
 	<h3>Change Cooler Setting:</h3>
 	    <form method="POST">
   	    <label for="coolerSetting"></label>
@@ -38,7 +38,12 @@
 		    <option value="Fan Lo (w/Pump)" style="font-size:50px;">Fan Lo (w/Pump)</option>
 		    <option value="Pump" style="font-size:50px;">Pump</option>
 		</select>
-  		<input type="submit" style="font-size:50px;">
+  		<input type="submit" style="font-size:50px;"/>
+		<div class="desiredTemperature">
+            <h3>Set Auto Temperature (°F):</h3>
+		    <input id="desiredTemp" name="desiredTemperature" type="range" min="55" max="95" step="1" oninput="GetDesiredTemperatureValue(this.value);">
+		    <input type="text" id="desiredTemperatureValue" value="75" readonly>
+		</div>
 	    </form>
 	<br>
 	<form>
@@ -86,7 +91,7 @@
 	<hr>
    <div class="log_data">
 	<br>
-	<h3> Showing last {{ num_days }} day(s) of temperature/humidity readings </h3>
+	<h3> Showing last <span class="currentSelection">{{ num_days }}</span> day(s) of temperature/humidity readings </h3>
 	<h3> Change # of Days: </h3>
 	    <form method="POST">
   	    <label for="numDays"></label>
@@ -158,6 +163,15 @@
       });
    </script>
    <script>
+      function GetDesiredTemperatureValue(value){
+          document.getElementById('desiredTemperatureValue').value=value + "° F";
+      }
+      function SetDesiredTemperatureValue(value = "75"){
+          document.getElementById('desiredTemp').value=value;
+          document.getElementById('desiredTemperatureValue').value=value + "° F";
+      }
+  </script>
+   <script>
     Chart.defaults.global.animationSteps = 50;
     Chart.defaults.global.tooltipYPadding = 16;
     Chart.defaults.global.tooltipCornerRadius = 0;
@@ -168,7 +182,13 @@
     Chart.defaults.global.scaleLineColor = "black";
     Chart.defaults.global.scaleFontSize = 16;
    
-    window.onload = generateGraph();
+    window.onload = loadAll();
+    
+    function loadAll(){
+    
+        SetDesiredTemperatureValue({{ desired_temp }});
+        generateGraph();
+    }
 
     function generateGraph(){
 

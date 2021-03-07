@@ -1,7 +1,7 @@
 """
 Author: Jayden Smith
 
-Last Modified: February 27, 2021
+Last Modified: March 6, 2021
 
 ECE 4020 - Senior Project II
 
@@ -77,7 +77,8 @@ def wait_for_serial_response(timeout):
     response = read_serial()
     timer = 0
     while response == b"" and timer < timeout:
-        set_cooler(get_cooler_setting())
+        coolerSetting, desired_temperature = get_cooler_setting()
+        set_cooler(coolerSetting, desired_temperature)
         print("  . ({})".format(timeout-timer))
         timer += 1
         time.sleep(1)
@@ -97,14 +98,37 @@ def reset_serial_port():
 
 # ----------------------- Database Functionality ----------------------- #  
 # 
-#  Define a class for holding database entry information
+#  Define a class for holding sensor data information from db
 class SensorData:
     def __init__(self, id="-1", sensor_id="-1", temperature=32.5, humidity=25.7):
         self.id = id
         self.sensor_id = sensor_id
         self.temperature = temperature
         self.humidity = humidity
-
+        
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__, self.__dict__)
+    
+    def __print__(self):
+        return "%r" % (self.__dict__)
+        
+#  Define a class for holding house setting information from db
+class HouseSettings:
+    def __init__(self, id="-1", latitude=0.0, longitude=0.0, house_volume=0.0, lo_fan_volume=0.0, hi_fan_volume=0.0, efficiency=0.0):
+        self.id = id
+        self.latitude = latitude
+        self.longitude = longitude
+        self.house_volume = house_volume
+        self.lo_fan_volume = lo_fan_volume
+        self.hi_fan_volume = hi_fan_volume
+        self.efficiency = efficiency
+    
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__, self.__dict__)
+    
+    def __print__(self):
+        return "%r" % (self.__dict__)
+    
 # Connect the mySQL database and provide login credentials
 smartswampcooler_db = mysql.connector.connect(
   host="localhost",
@@ -154,8 +178,17 @@ SQL_SELECT_RECENT_SENSOR_DATA = """
   DESC LIMIT 1
 """
 
+# Select most recent entry for given sensor ID
+SQL_SELECT_HOUSE_SETTINGS = """
+  SELECT *
+  FROM house_settings
+  HAVING MAX(id)
+"""
+
 # Maps database data to sensor_data object
 def map_to_object(data):
+  sensor_data = SensorData()
+  
   try:
     # assign database fields to object
     sensor_data.id                      = (data["id"])
@@ -172,6 +205,29 @@ def map_to_object(data):
     return sensor_data 
   
   return sensor_data
+
+# Maps database data to sensor_data object
+def map_to_house_object(data):
+  house_settings = HouseSettings()
+  
+  try:
+    # assign database fields to object
+    house_settings.id                      = (data["id"])
+    house_settings.latitude                = (data["latitude"])
+    house_settings.longitude               = (data["longitude"])
+    house_settings.lo_fan_volume           = (data["lo_fan_volume"])
+    house_settings.hi_fan_volume           = (data["hi_fan_volume"])
+    house_settings.house_volume            = (data["house_volume"])
+    house_settings.efficiency              = (data["efficiency"])
+  
+  except Exception as ex:
+    print("ERROR: Error mapping database data to house_settings object")
+    template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+    message = template.format(type(ex).__name__, ex.args)
+    print(message)
+    return house_settings 
+  
+  return house_settings
 
 # Read out all entries from the database
 def read_all_db():
@@ -204,7 +260,7 @@ def read_all_db():
 # Read named sensor entries from database
 def read_sensor_db(sensor_name="", days=0):
   mycursor = smartswampcooler_db.cursor()
-
+  
   if sensor_name == "roof":
     params = (ROOF_SENSOR_ID, days,) 
   elif sensor_name == "home":
@@ -238,6 +294,34 @@ def read_sensor_db(sensor_name="", days=0):
       sensor_data = map_to_object(data[i])
   
   return sensor_data
+
+
+# Read most recent house settings from database
+def read_house_settings_db():
+  house_settings = HouseSettings()
+  
+  mycursor = smartswampcooler_db.cursor()
+
+  mycursor.execute(SQL_SELECT_HOUSE_SETTINGS)
+  
+  # this will extract row headers
+  row_headers = [x[0] for x in mycursor.description] 
+  myresult = mycursor.fetchall()
+
+  json_data = []
+  for result in myresult:
+    json_data.append(dict(zip(row_headers,result)))
+
+  data = json.dumps(json_data, indent=4, sort_keys=True, default=str)
+  data = json.loads(data)
+  
+  #print("Displaying house settings: ")
+  # print out all json data entries
+  for i in range(len(data)):
+      #print(data[i])
+      house_settings = map_to_house_object(data[i])
+  
+  return house_settings
 
 # Insert new sensor data to the database
 def write_db(sensor_data):
@@ -318,10 +402,12 @@ def get_cooler_setting():
     smartswampcooler_db.commit()
     
     #print("SETTING: ", data[0]["setting"])
-    return data[0]["setting"]
+    return data[0]["setting"], data[0]["desiredTemperature"]
 
 # retrieve most recent temp/hum/timestamp data from database
 def get_recent_data(sensor_name=""):
+  sensor_data = SensorData()
+  
   # creating a connection cursor
   mycursor = smartswampcooler_db.cursor()
   
@@ -356,7 +442,7 @@ def get_recent_data(sensor_name=""):
   
   return sensor_data
     
-def set_cooler(setting):
+def set_cooler(setting, desired_temperature):
     if setting[0:4] == 'Auto':
         # run sweet algorithm
         print('Auto')
@@ -369,9 +455,11 @@ def set_cooler(setting):
         recent_roof_data = get_recent_data(sensor_name="roof")
         recent_home_data = get_recent_data(sensor_name="home")
         
+        house_settings = read_house_settings_db()
+        
         setting = libs.get_auto_setting(recent_roof_data.temperature, recent_roof_data.humidity,\
                                         recent_home_data.temperature, recent_home_data.humidity,\
-                                        desired_temp=65)
+                                        house_settings, desired_temp=desired_temperature)
         #print('New Setting: ' + setting)
         
         # only write to the database if setting changes
@@ -419,11 +507,10 @@ def set_cooler(setting):
 if __name__== "__main__":
     
   while(1):
-    sensor_data = SensorData()
+    #sensor_data = SensorData()
     raw_xb_data = wait_for_serial_response(10)
     
     if raw_xb_data != b"":
-        sensor_data = SensorData()
         sensor_data = xbee_to_object(raw_xb_data)
         display_sensor_data(sensor_data)
         write_db(sensor_data)
