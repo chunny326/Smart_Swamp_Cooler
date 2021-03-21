@@ -1,7 +1,7 @@
 """
 Authors: Jayden Smith & Maxwell Cox
 
-Last Modified: February 27, 2021
+Last Modified: Match 20, 2021
 
 ECE 4020 - Senior Project II
 
@@ -457,7 +457,7 @@ def my_form_post():
         #print("Setting numDays\n")
         global numDays
         numDays = int (request.form.get('numDays'))
-        coolerSetting = get_cooler_setting()
+        coolerSetting, desiredTemperature = get_cooler_setting()
     elif 'coolerSetting' in req_form:
         #print("Setting coolerSetting\n")
         #global coolerSetting

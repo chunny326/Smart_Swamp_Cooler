@@ -7,18 +7,20 @@
   </form>  
   <br>
   <font size="20" face="Courier New" >
-  <table cellspacing="20px"> 
+  <table class="cooler_settings_table" cellspacing="50px"> 
     <thead> 
     <tr> 
 	<th>Date and Time</th>
-	<th>Cooler Setting</th> 
+	<th>Cooler Setting</th>
+	<th>Desired Temperature</th>
     </tr> 
     </thead> 
     <tbody> 
 	{% for row in value %}  
 	    <tr> 
 	        <td>{{row[1]}}</td>
-		<td>{{row[2]}}</td> 
+	        <td>{{row[2]}}</td>
+	        <td>{{row[3]}}</td> 
 	    </tr> 
 	{% endfor %} 
     </tbody> 

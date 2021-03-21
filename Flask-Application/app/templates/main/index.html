@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="+">
+  <div class="sensor_data">
     <h1> Inside Sensor Data </h1>
     <div id="g3"></div>
     <div id="g4"></div>
@@ -31,7 +31,7 @@
   	    <label for="coolerSetting"></label>
   		<select id="coolerSetting" name="coolerSetting" style="font-size:50px;">
 		    <option value="Off" style="font-size:50px;">Off</option>
-         	    <option value="Auto" style="font-size:50px;">Auto</option>
+		    <option value="Auto" style="font-size:50px;">Auto</option>
 		    <option value="Fan Hi" style="font-size:50px;">Fan Hi</option>
 		    <option value="Fan Lo" style="font-size:50px;">Fan Lo</option>
 		    <option value="Fan Hi (w/Pump)" style="font-size:50px;">Fan Hi (w/Pump)</option>
@@ -42,7 +42,7 @@
 		<div class="desiredTemperature">
             <h3>Set Auto Temperature (°F):</h3>
 		    <input id="desiredTemp" name="desiredTemperature" type="range" min="55" max="95" step="1" oninput="GetDesiredTemperatureValue(this.value);">
-		    <input type="text" id="desiredTemperatureValue" value="75" readonly>
+		    <input type="text" id="desiredTemperatureValue" value="{{ desired_temp }}" readonly>
 		</div>
 	    </form>
 	<br>
@@ -166,7 +166,7 @@
       function GetDesiredTemperatureValue(value){
           document.getElementById('desiredTemperatureValue').value=value + "° F";
       }
-      function SetDesiredTemperatureValue(value = "75"){
+      function SetDesiredTemperatureValue(value){
           document.getElementById('desiredTemp').value=value;
           document.getElementById('desiredTemperatureValue').value=value + "° F";
       }

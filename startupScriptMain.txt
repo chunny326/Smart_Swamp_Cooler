@@ -1,0 +1,11 @@
+[Unit]
+Description=smartSwampCooler data collection
+After=multi-user.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/webapp
+ExecStart=/usr/bin/python3 /home/pi/webapp/smartSwampCooler.py
+
+[Install]
+WantedBy=multi-user.target

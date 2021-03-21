@@ -165,8 +165,8 @@ SQL_SELECT_COOLER_SETTING = """
 
 # Insert new row of Cooler Settings
 SQL_INSERT_SETTINGS = """
- INSERT INTO cooler_settings (timestamp, setting)
- VALUES (NOW(), %s)
+ INSERT INTO cooler_settings (timestamp, setting, desiredTemperature)
+ VALUES (NOW(), %s, %s)
 """
 
 # Select most recent entry for given sensor ID
@@ -346,8 +346,14 @@ def xbee_to_object(xb_raw_data):
             .replace('"b"', '').replace('}",', "},")\
             .replace('\\x', '').replace('eui64": ', 'eui64": "')
   
-  # convert XBEE data to Python dictionary
-  xb_dict = json.loads(xb_data)
+  try:
+    # convert XBEE data to Python dictionary
+    xb_dict = json.loads(xb_data)
+  except Exception as ex:
+    # print("ERROR: Error loading xb data")
+    # template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+    #message = template.format(type(ex).__name__, ex.args)
+    return -1
 
   # check sensor unique 64-bit identifier
   # check for ROOF, HOME, or UNKNOWN sensor
@@ -370,12 +376,12 @@ def display_sensor_data(sensor_data):
       sensor_data.sensor_id, sensor_data.temperature, sensor_data.humidity))
 
 # insert newest cooler setting to the database
-def write_setting_db(coolerSet):
+def write_setting_db(coolerSet, desiredTemperature):
     print("Inserting new cooler setting data...")
     
     mycursor = smartswampcooler_db.cursor()
 
-    params = (coolerSet,)
+    params = (coolerSet, desiredTemperature,)
     mycursor.execute(SQL_INSERT_SETTINGS, params)
     smartswampcooler_db.commit()
   
@@ -464,7 +470,7 @@ def set_cooler(setting, desired_temperature):
         
         # only write to the database if setting changes
         if setting != temp:
-            write_setting_db('Auto ' + setting)
+            write_setting_db('Auto ' + setting, desired_temperature)
     if setting == 'Off':
         # turn off all GPIO signals
         print('Off')
@@ -512,12 +518,13 @@ if __name__== "__main__":
     
     if raw_xb_data != b"":
         sensor_data = xbee_to_object(raw_xb_data)
-        display_sensor_data(sensor_data)
-        write_db(sensor_data)
-        # read_sensor_db(sensor_name="home", days=2) 
+        if ( sensor_data != -1 ):
+            display_sensor_data(sensor_data)
+            write_db(sensor_data)
+            # read_sensor_db(sensor_name="home", days=2) 
         
-        # check updated database contents
-        # read_all_db()
+            # check updated database contents
+            # read_all_db()
 
     # flush serial input buffer and reopen port
     reset_serial_port()

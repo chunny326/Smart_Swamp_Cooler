@@ -187,3 +187,8 @@ canvas{
     border: none;
     border-color: transparent;
 }
+
+.cooler_settings_table{
+    text-align: center;
+    color: #FF0000;
+}
