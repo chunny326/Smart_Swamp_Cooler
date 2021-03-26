@@ -1,7 +1,7 @@
 """
 Authors: Jayden Smith & Maxwell Cox
 
-Last Modified: March 20, 2021
+Last Modified: March 24, 2021
 
 ECE 4020 - Senior Project II
 
@@ -22,6 +22,9 @@ import geocoder
 import reverse_geocoder
 import datetime
 from datetime import datetime
+import os
+import qrcode
+import image
 
 global numDays
 numDays = 14
@@ -407,7 +410,20 @@ def retrieve_forecast_data():
 
     return temperatures, times, upcomingWeekWeatherData, upcomingWeekLength, currentCommonTime, currentTemperature, currentIcon, currentForecast, stringCurrentDate, cityAndState
 
-
+def ip_or_qr(get=None):
+    # find current IP address where website is available on network
+    stream = os.popen("ifconfig wlan0 | egrep -o 'inet ([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}'")
+    ip_addr = stream.read()
+    
+    # print("Current IP address: ", ip_addr)
+    if get == 'ip':
+        return ip_addr
+    
+    # make and return QR code image
+    if get == 'qr':
+        # convert IP address to QR code to display on website, where any phone can scan and connect to it
+        #return qrcode.make(ip_addr)
+        return qrcode.make(ip_addr)
 
 @app.route("/")
 def index():
@@ -422,6 +438,9 @@ def index():
     temperatures, times, upcomingWeekWeatherData, upcomingWeekLength,\
         currentCommonTime, currentTemperature, currentIcon,\
         currentForecast, currentDate, cityAndState = retrieve_forecast_data()
+    
+    # retrieve current IP address on network
+    ip_addr = ip_or_qr(get='ip')
     
     templateData = {
         'time_roof': recent_roof_data.timestamp,
@@ -442,7 +461,8 @@ def index():
         'currentIcon': currentIcon,
         'currentForecast': currentForecast,
         'currentDate': currentDate,
-        'cityAndState': cityAndState
+        'cityAndState': cityAndState,
+        'ip_addr': ip_addr
     }
     
     return render_template('main/index.html', **templateData)
@@ -475,6 +495,9 @@ def my_form_post():
         currentCommonTime, currentTemperature, currentIcon,\
         currentForecast, currentDate, cityAndState = retrieve_forecast_data()
     
+    # retrieve current IP address on network
+    ip_addr = ip_or_qr(get='ip')
+    
     templateData = {
         'time_roof': recent_roof_data.timestamp,
         'temp_roof': recent_roof_data.temperature,
@@ -494,10 +517,20 @@ def my_form_post():
         'currentIcon': currentIcon,
         'currentForecast': currentForecast,
         'currentDate': currentDate,
-        'cityAndState': cityAndState
+        'cityAndState': cityAndState,
+        'ip_addr': ip_addr
     }
     
     return render_template('main/index.html', **templateData)
+
+@app.route('/qr_code')
+def get_qr_code():
+    qr_code = ip_or_qr(get='qr')
+    output = io.BytesIO()
+    qr_code.convert('RGBA').save(output, format='PNG')
+    output.seek(0, 0)
+
+    return send_file(output, mimetype='image/png', as_attachment=False)
 
 @app.route('/plot/temp_roof')
 def plot_temp_roof():

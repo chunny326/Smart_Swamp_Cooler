@@ -8,6 +8,13 @@
 {% endblock %}
 
 {% block content %}
+  <div class="qr_code">
+     <h2> Connect personal devices to cooler by first connecting </h2>
+     <h2> devices to same Wifi network as cooler. </h2>
+     <h2> Then, scan QR code below to access this page on your phone. </h2>
+     <h2> Or type this IP address in any browser search bar: {{ ip_addr }} </h2>
+     <img src="/qr_code" alt="Image Placeholder" width="20%">
+  </div>
   <div class="sensor_data">
     <h1> Inside Sensor Data </h1>
     <div id="g3"></div>

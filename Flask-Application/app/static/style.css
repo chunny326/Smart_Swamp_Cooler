@@ -192,3 +192,9 @@ canvas{
     text-align: center;
     color: #FF0000;
 }
+
+.qr_code h2{
+    text-align: center;
+    font-size: 1.0em;
+    font-weight: bold;
+}
