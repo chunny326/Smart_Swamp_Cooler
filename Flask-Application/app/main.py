@@ -1,7 +1,7 @@
 """
 Authors: Jayden Smith & Maxwell Cox
 
-Last Modified: March 26, 2021
+Last Modified: March 27, 2021
 
 ECE 4020 - Senior Project II
 
@@ -30,8 +30,8 @@ global numDays
 numDays = 14
 
 # Unique IDs for Zigbee sensor nodes
-ROOF_SENSOR_ID = "0013a200Ac21216"
-HOME_SENSOR_ID = "0013a200Ac1f102"
+HOME_SENSOR_ID = "0013a200Ac21216"
+ROOF_SENSOR_ID = "0013a200Ac1f102"
 
 app = Flask(__name__) # Needs to be used in every flask application
 
@@ -81,6 +81,17 @@ SQL_SELECT_ALL_COOLER_SETTINGS = """
   FROM cooler_settings
   ORDER BY timestamp
   DESC LIMIT 2000
+"""
+
+# Delete old forecasted data
+SQL_DELETE_OLD_FORECAST = """
+  DELETE FROM forecast
+"""
+
+# Insert forecasted temperatures into database for smart algorithm
+SQL_INSERT_FORECAST_TEMPERATURE = """
+  INSERT INTO forecast (timestamp, temperature)
+  VALUES (%s, %s)
 """
 
 #  Define a class for holding database entry information
@@ -241,6 +252,19 @@ def write_db(coolerSet, desiredTemperature):
   
     print("{} record(s) affected".format(mycursor.rowcount))
   
+def forecast_temps_db(temperatures, times):
+    mycursor = mysql.new_cursor()
+    mycursor.execute(SQL_DELETE_OLD_FORECAST)
+    mysql.connection.commit()
+    
+    i = 0
+    for temperature in temperatures:
+       mycursor = mysql.new_cursor()
+       params = (times[i], temperature,)
+       i += 1
+       mycursor.execute(SQL_INSERT_FORECAST_TEMPERATURE, params)
+       mysql.connection.commit()
+
 def plot_forecast(temperatures, time):
     ys = temperatures
     
@@ -478,7 +502,10 @@ def retrieve_forecast_data():
         times.append(hour[1])
 
     upcomingWeekLength = len(upcomingWeekWeatherData)
-
+    
+    # write list of forecasted temperatures to database for smart algorithm
+    forecast_temps_db(temperatures, times)
+    
     return temperatures, times, upcomingWeekWeatherData, upcomingWeekLength, currentCommonTime, currentTemperature, currentIcon, currentForecast, stringCurrentDate, cityAndState
 
 def ip_or_qr(get=None):
@@ -635,3 +662,11 @@ def cooler_settings_log():
     mycursor.execute(SQL_SELECT_ALL_COOLER_SETTINGS) 
     data = mycursor.fetchall() 
     return render_template('main/cooler_settings_log.html', value=data)
+
+@app.after_request
+def set_response_headers(response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    response.cache_control.max_age = 0
+    return response

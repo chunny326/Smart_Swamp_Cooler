@@ -6,6 +6,9 @@ After=multi-user.target
 User=pi
 WorkingDirectory=/home/pi/webapp
 ExecStart=/usr/bin/python3 /home/pi/webapp/smartSwampCooler.py
+Restart=on-failure
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
+

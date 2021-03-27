@@ -1,7 +1,7 @@
 """
 Author: Jayden Smith
 
-Last Modified: March 6, 2021
+Last Modified: March 27, 2021
 
 ECE 4020 - Senior Project II
 
@@ -39,8 +39,8 @@ GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
 # unique IDs for Zigbee sensor nodes
-ROOF_SENSOR_ID = "0013a200Ac21216"
-HOME_SENSOR_ID = "0013a200Ac1f102"
+HOME_SENSOR_ID = "0013a200Ac21216"
+ROOF_SENSOR_ID = "0013a200Ac1f102"
 
 # Pi GPIO assignments for cooler signals
 speed = LED(21)
@@ -183,6 +183,14 @@ SQL_SELECT_HOUSE_SETTINGS = """
   SELECT *
   FROM house_settings
   HAVING MAX(id)
+"""
+
+# Retrieve forecasted weather from db
+SQL_SELECT_FORECAST = """
+  SELECT temperature
+  FROM forecast
+  ORDER BY id
+  ASC LIMIT 8
 """
 
 # Maps database data to sensor_data object
@@ -447,7 +455,20 @@ def get_recent_data(sensor_name=""):
       sensor_data = map_to_object(data[i])
   
   return sensor_data
-    
+   
+def get_forecast_db():
+  mycursor = smartswampcooler_db.cursor()
+  mycursor.execute(SQL_SELECT_FORECAST)
+  
+  myresult = mycursor.fetchall()
+
+  temperatures = []
+  for result in myresult:
+    temperatures.append(result[0])
+
+  #print(temperatures)
+  return temperatures
+
 def set_cooler(setting, desired_temperature):
     if setting[0:4] == 'Auto':
         # run sweet algorithm
@@ -463,7 +484,10 @@ def set_cooler(setting, desired_temperature):
         
         house_settings = read_house_settings_db()
         
-        setting = libs.get_auto_setting(recent_roof_data.temperature, recent_roof_data.humidity,\
+        # retrieve forecasted temperatures and append to recent sensor reading
+        roof_temperatures = [recent_roof_data.temperature,] + get_forecast_db()
+        
+        setting = libs.get_auto_setting(roof_temperatures, recent_roof_data.humidity,\
                                         recent_home_data.temperature, recent_home_data.humidity,\
                                         house_settings, desired_temp=desired_temperature)
         #print('New Setting: ' + setting)
