@@ -1,7 +1,7 @@
 """
 Authors: Jayden Smith & Maxwell Cox
 
-Last Modified: March 24, 2021
+Last Modified: March 26, 2021
 
 ECE 4020 - Senior Project II
 
@@ -241,170 +241,241 @@ def write_db(coolerSet, desiredTemperature):
   
     print("{} record(s) affected".format(mycursor.rowcount))
   
-def retrieve_forecast_data():
-    temperatures = []
-    times = []
+def plot_forecast(temperatures, time):
+    ys = temperatures
+    
+    fig = Figure(figsize=(9, 4))
+    axis = fig.add_subplot(1, 1, 1)
+    
+    # axis.set_title("Temperature [°F]")
+    #axis.set_xlabel("Time")
+    axis.grid(True)
+    xs = time
+    axis.plot(xs, ys)
+    axis.tick_params('x', labelrotation=75)
+    axis.xaxis.set_ticks_position('top')
+    #fig.set_tight_layout(True)
+    
+    canvas = FigureCanvas(fig)
+    output = io.BytesIO()
+    canvas.print_png(output)
+    
+    response = make_response(output.getvalue())
+    response.mimetype = 'image/png'
+    
+    return response
 
-    logging.basicConfig(level=logging.WARNING)
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method performs the requests to retrieve the forecast data from weather.gov. 
+#              The requests will be attempted up to five times to ensure a valid response is given.
+def retrieve_raw_forecast_data(coordinates):
+
+    #logging.basicConfig(level=logging.DEBUG)
     session = requests.Session()
-    session.headers.update({'User-Agent': '(Smart Swamp Cooler Project, ronaldjensen@mail.weber.edu)'})
+    session.headers.update({'User-Agent': '(Smart Swamp Coooler Project, ronaldjensen@mail.weber.edu)'})
 
-    g=geocoder.ip('me')
-    lat, lon = g.latlng
-    
-    coordinates = g.latlng
-    location = reverse_geocoder.search(coordinates)
-    
-    cityAndState = location[0]['name'] + ', ' + location[0]['admin1']
+    lat, lon = coordinates
 
     request_string = 'https://api.weather.gov/points/{lat:0.3f},{lon:0.3f}'.format(lat=lat, lon=lon)
+    print('get '+request_string)
 
-    response=session.get(request_string, timeout=(5, 60)) # wait 5 seconds
+    for i in range(0,5):
+        response = session.get(request_string, timeout=(5, 60)) # wait 5 seconds
+        if not response.ok:
+            continue
+        else:
+            points_data = json.loads(response.content)
+            forecast_request = points_data['properties']['forecastHourly']
+            break
 
-    if response.ok:
-        points_data = json.loads(response.content)
-        forecast_request = points_data['properties']['forecastHourly']
+    for i in range(0,5):
+        response=session.get(forecast_request, timeout=(5, 60)) # wait 5 seconds
+        if not response.ok:
+            continue
+        else:
+            return json.loads(response.content)
 
-    response=session.get(forecast_request, timeout=(5, 60)) # wait 5 seconds
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method returns the city and state where the pi is being used
+def getCityAndState(coordinates):
+    location = reverse_geocoder.search(coordinates)
+    print(location[0]['name'])
+    return location[0]['name'] + ', ' + location[0]['admin1']
 
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method returns the present temperature from the forecast data
+def getCurrentTemperature(forecast_data):
+    periods = forecast_data['properties']['periods']
+    firstPeriod = periods[0]
+    return firstPeriod['temperature']
+
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method returns the current forecast icon from the forecast data
+def getCurrentIcon(forecast_data):
+    periods = forecast_data['properties']['periods']
+    firstPeriod = periods[0]
+    return firstPeriod['icon']
+
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method returns the current forecast from the forecast data
+def getCurrentForecast(forecast_data):
+    periods = forecast_data['properties']['periods']
+    firstPeriod = periods[0]
+    return firstPeriod['shortForecast']
+
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method returns the current date and time from the forecast data
+def getCurrentDateAndTime():
+    commonTimeValues = [['12am', '00:00:00'],
+                        ['1am', '01:00:00'],
+                        ['2am', '02:00:00'],
+                        ['3am', '03:00:00'],
+                        ['4am', '04:00:00'],
+                        ['5am', '05:00:00'],
+                        ['6am', '06:00:00'],
+                        ['7am', '07:00:00'],
+                        ['8am', '08:00:00'],
+                        ['9am', '09:00:00'],
+                        ['10am', '10:00:00'],
+                        ['11am', '11:00:00'],
+                        ['12pm', '12:00:00'],
+                        ['1pm', '13:00:00'],
+                        ['2pm', '14:00:00'],
+                        ['3pm', '15:00:00'],
+                        ['4pm', '16:00:00'],
+                        ['5pm', '17:00:00'],
+                        ['6pm', '18:00:00'],
+                        ['7pm', '19:00:00'],
+                        ['8pm', '20:00:00'],
+                        ['9pm', '21:00:00'],
+                        ['10pm', '22:00:00'],
+                        ['11pm', '23:00:00']]
+
+    currentDate = datetime.now()
+    stringCurrentDate = currentDate.strftime('%m/%d')
+    stringCurrentTime = currentDate.strftime('%H:00:00')
+    for commonTimeValue in commonTimeValues:
+        if commonTimeValue[1] == stringCurrentTime:
+            currentCommonTime = commonTimeValue[0]
+            break
+
+    return currentCommonTime, stringCurrentDate
+
+# Author: Maxwell Cox
+# Last date modified: 3/24/2021
+# Description: This method retrieves and formats data from weather.gov. It performs requests to retrieve the data first and then 
+#              performs formatting to display the current, the daily and the upcoming week's forecast.
+def retrieve_forecast_data():
     startDate = None
     currentTemperature = None
     currentForecast = None
     currentIcon = None
     currentTime = None
     currentCommonTime = None
-
-    commonTimeValues = [['12:00 AM', '00:00:00'],
-                        ['1:00 AM', '01:00:00'],
-                        ['2:00 AM', '02:00:00'],
-                        ['3:00 AM', '03:00:00'],
-                        ['4:00 AM', '04:00:00'],
-                        ['5:00 AM', '05:00:00'],
-                        ['6:00 AM', '06:00:00'],
-                        ['7:00 AM', '07:00:00'],
-                        ['8:00 AM', '08:00:00'],
-                        ['9:00 AM', '09:00:00'],
-                        ['10:00 AM', '10:00:00'],
-                        ['11:00 AM', '11:00:00'],
-                        ['12:00 PM', '12:00:00'],
-                        ['1:00 PM', '13:00:00'],
-                        ['2:00 PM', '14:00:00'],
-                        ['3:00 PM', '15:00:00'],
-                        ['4:00 PM', '16:00:00'],
-                        ['5:00 PM', '17:00:00'],
-                        ['6:00 PM', '18:00:00'],
-                        ['7:00 PM', '19:00:00'],
-                        ['8:00 PM', '20:00:00'],
-                        ['9:00 PM', '21:00:00'],
-                        ['10:00 PM', '22:00:00'],
-                        ['11:00 PM', '23:00:00']]
-
     dailyHigh = None
     dailyLow = None
-
+    next24HoursCollected = False
     nextTwentyFourHourWeatherData = []
     upcomingWeekWeatherData = []
     averageForecast = []
+    temperatures = []
+    times = []
+    commonTimeValues = [['12am', '00:00:00'],
+                        ['1am', '01:00:00'],
+                        ['2am', '02:00:00'],
+                        ['3am', '03:00:00'],
+                        ['4am', '04:00:00'],
+                        ['5am', '05:00:00'],
+                        ['6am', '06:00:00'],
+                        ['7am', '07:00:00'],
+                        ['8am', '08:00:00'],
+                        ['9am', '09:00:00'],
+                        ['10am', '10:00:00'],
+                        ['11am', '11:00:00'],
+                        ['12pm', '12:00:00'],
+                        ['1pm', '13:00:00'],
+                        ['2pm', '14:00:00'],
+                        ['3pm', '15:00:00'],
+                        ['4pm', '16:00:00'],
+                        ['5pm', '17:00:00'],
+                        ['6pm', '18:00:00'],
+                        ['7pm', '19:00:00'],
+                        ['8pm', '20:00:00'],
+                        ['9pm', '21:00:00'],
+                        ['10pm', '22:00:00'],
+                        ['11pm', '23:00:00']]
 
-    if response.ok:
-        forecast_data = json.loads(response.content)
-        periods = forecast_data['properties']['periods']
+    g = geocoder.ip('me')
 
-        next24HoursCollected = False
+    cityAndState = getCityAndState(g.latlng)
+    forecast_data = retrieve_raw_forecast_data(g.latlng)
+    currentTemperature = getCurrentTemperature(forecast_data)
+    currentIcon = getCurrentIcon(forecast_data)
+    currentForecast = getCurrentForecast(forecast_data)
+    currentCommonTime, stringCurrentDate = getCurrentDateAndTime()
 
-        for sample in periods:
-            if startDate == None:
-                time = sample['startTime'].split('T')
-                startDate = time[0]
+    periods = forecast_data['properties']['periods']
 
-                sampleDate = time[0]
-                currentTemperature = sample['temperature']
-                currentForecast = sample['shortForecast']
-                currentIcon = sample['icon']
+    for sample in periods:
+        if startDate == None:
+            time = sample['startTime'].split('T')
+            startDate = time[0]
+            sampleDate = time[0]
 
-            similarPrediction = False
-            for forecast in averageForecast:
-                if forecast[0] == sample['shortForecast']:
-                    forecast[1] += 1
-                    similarPrediction = True
-                    break
-            
-            if not similarPrediction:
-                averageForecast.append([sample['shortForecast'], 1, sample['icon']])
+        similarPrediction = False
+        for forecast in averageForecast:
+            if forecast[0] == sample['shortForecast']:
+                forecast[1] += 1
+                similarPrediction = True
+                break
+        
+        if not similarPrediction:
+            averageForecast.append([sample['shortForecast'], 1, sample['icon']])
 
-            if currentTime != sample['endTime'].split('T')[1] and not next24HoursCollected:
-                for commonTimeValue in commonTimeValues:
-                    if sample['startTime'].split('T')[1].split('-')[0] == commonTimeValue[1]:
-                        nextTwentyFourHourWeatherData.append([sample['startTime'].split('T')[0].split('-')[0], commonTimeValue[0], sample['temperature']])
-            elif not next24HoursCollected:
-                for commonTimeValue in commonTimeValues:
-                    if sample['startTime'].split('T')[1].split('-')[0] == commonTimeValue[1]:
-                        nextTwentyFourHourWeatherData.append([sample['startTime'].split('T')[0].split('-')[0], commonTimeValue[0], sample['temperature']])
-                        next24HoursCollected = True
+        if currentTime != sample['endTime'].split('T')[1] and not next24HoursCollected:
+            for commonTimeValue in commonTimeValues:
+                if sample['startTime'].split('T')[1].split('-')[0] == commonTimeValue[1]:
+                    nextTwentyFourHourWeatherData.append([sample['startTime'].split('T')[0].split('-')[0], commonTimeValue[0], sample['temperature']])
+        elif not next24HoursCollected:
+            for commonTimeValue in commonTimeValues:
+                if sample['startTime'].split('T')[1].split('-')[0] == commonTimeValue[1]:
+                    nextTwentyFourHourWeatherData.append([sample['startTime'].split('T')[0].split('-')[0], commonTimeValue[0], sample['temperature']])
+                    next24HoursCollected = True
 
-            if sampleDate == sample['startTime'].split('T')[0]:
-                if dailyHigh == None:
-                    dailyHigh = sample['temperature']
-                elif sample['temperature'] > dailyHigh:
-                    dailyHigh = sample['temperature']
-                if dailyLow == None:    
-                    dailyLow = sample['temperature']
-                elif sample['temperature'] < dailyLow:
-                    dailyLow = sample['temperature']
-
-            else:
-                forecastMostLikely = []
-
-                for forecast in averageForecast:
-                    if len(forecastMostLikely) == 0 or forecastMostLikely[1] < forecast[1]:
-                        forecastMostLikely = forecast
-
-                formattedDate = datetime.strptime(sampleDate, '%Y-%m-%d').strftime('%m/%d')
-                upcomingWeekWeatherData.append([formattedDate, dailyHigh, dailyLow, forecastMostLikely[2]])
-
-                averageForecast = []
-
-                sampleDate = sample['startTime'].split('T')[0]
+        if sampleDate == sample['startTime'].split('T')[0]:
+            if dailyHigh == None:
                 dailyHigh = sample['temperature']
+            elif sample['temperature'] > dailyHigh:
+                dailyHigh = sample['temperature']
+            if dailyLow == None:    
                 dailyLow = sample['temperature']
-                
-        for hour in nextTwentyFourHourWeatherData:
-            temperatures.append(hour[2])
-            times.append(hour[1])
+            elif sample['temperature'] < dailyLow:
+                dailyLow = sample['temperature']
 
-    currentDate = datetime.now()
-    stringCurrentDate = currentDate.strftime('%B/%d')
-    
-    stringDay = stringCurrentDate.split('/')[1]
-    
-    if stringDay[0] == '0':
-        if stringDay[1] == '1':
-            stringDay = '1st'
-        elif stringDay[1] == '2':
-            stringDay = '2nd'
-        elif stringDay[1] == '3':
-            stringDay = '3rd'
         else:
-            stringDay = stringDay[1] + 'th'
-            
-    elif stringDay[0] == '2' or stringDay[0] == '3':
-        if stringDay[1] == '1':
-            stringDay = stringDay + 'st'
-        elif stringDay[1] == '2':
-            stringDay = stringDay + 'nd'
-        elif stringDay[1] == '3':
-            stringDay = stringDay + 'rd'
-        else:
-            stringDay = stringDay + 'th'
-    else:
-        stringDay = stringDay + 'th'
+            forecastMostLikely = []
+            for forecast in averageForecast:
+                if len(forecastMostLikely) == 0 or forecastMostLikely[1] < forecast[1]:
+                    forecastMostLikely = forecast
+
+            formattedDate = datetime.strptime(sampleDate, '%Y-%m-%d').strftime('%m/%d')
+            upcomingWeekWeatherData.append([formattedDate, dailyHigh, dailyLow, forecastMostLikely[2]])
+
+            averageForecast = []
+            sampleDate = sample['startTime'].split('T')[0]
+            dailyHigh = sample['temperature']
+            dailyLow = sample['temperature']
+                
     
-    stringCurrentDate = stringCurrentDate.split('/')[0] + ' ' + stringDay
-    
-    stringCurrentTime = currentDate.strftime('%H:00:00')
-    for commonTimeValue in commonTimeValues:
-        if commonTimeValue[1] == stringCurrentTime:
-            currentCommonTime = commonTimeValue[0]
+    for hour in nextTwentyFourHourWeatherData:
+        temperatures.append(hour[2])
+        times.append(hour[1])
 
     upcomingWeekLength = len(upcomingWeekWeatherData)
 
@@ -413,7 +484,7 @@ def retrieve_forecast_data():
 def ip_or_qr(get=None):
     # find current IP address where website is available on network
     stream = os.popen("ifconfig wlan0 | egrep -o 'inet ([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}'")
-    ip_addr = stream.read()
+    ip_addr = "http://" + stream.read()
     
     # print("Current IP address: ", ip_addr)
     if get == 'ip':
