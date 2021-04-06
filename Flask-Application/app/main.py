@@ -1,12 +1,17 @@
 """
-Authors: Jayden Smith & Maxwell Cox
+Author: Jayden Smith
 
-Last Modified: March 27, 2021
+Last Modified: April 5, 2021
 
 ECE 4020 - Senior Project II
 
-Main script for Flask website
 filename: main.py
+
+Main script for Flask website:
+This script manages the main website, including accessing MySQL databse, 
+controlling which cooler setting and desired temperature is chosen, 
+displaying inside and outside sensor data, showing historical cooler
+settings and sensor readings, and providing live forecast conditions. 
 """
 
 from flask import (Flask, render_template, request, url_for, make_response, send_file)
@@ -26,6 +31,7 @@ import os
 import qrcode
 import image
 
+# default number of days shown for historical sensor plots
 global numDays
 numDays = 14
 
@@ -33,7 +39,8 @@ numDays = 14
 HOME_SENSOR_ID = "0013a200Ac21216"
 ROOF_SENSOR_ID = "0013a200Ac1f102"
 
-app = Flask(__name__) # Needs to be used in every flask application
+# Needs to be used in every flask application
+app = Flask(__name__) 
 
 # Connect to the mySQL database and provide login credentials
 app.config['MYSQL_HOST'] = 'localhost'
@@ -42,8 +49,8 @@ app.config['MYSQL_DATABASE'] = 'smartswampcooler'
 app.config['MYSQL_PASSWORD'] = 'jeniffer'
 mysql = MySQL(app)
 
-# SQL queries to be used
-# Select all data from given sensor and interval (# of days previous)
+# --------------- SQL queries to be used ---------------------- #
+# Select all data from given sensor and interval (# of days shown)
 SQL_SELECT_SENSOR_DATA = """
   SELECT *
   FROM sensor_data
@@ -52,7 +59,7 @@ SQL_SELECT_SENSOR_DATA = """
   ORDER BY timestamp
 """
 
-# Select most recent entry for given sensor ID
+# Select most recent entry for given sensor
 SQL_SELECT_RECENT_DATA = """
   SELECT *
   FROM sensor_data
@@ -61,13 +68,13 @@ SQL_SELECT_RECENT_DATA = """
   DESC LIMIT 1
 """
 
-# Insert new row of Cooler Settings
+# Insert new row of settings for cooler (setting and desired temp)
 SQL_INSERT_SETTINGS = """
  INSERT INTO cooler_settings (timestamp, setting, desiredTemperature)
  VALUES (NOW(), %s, %s)
 """
 
-# Select most recent entry for cooler setting
+# Select most recent entry for cooler setting to display on website
 SQL_SELECT_COOLER_SETTING = """
   SELECT *
   FROM cooler_settings
@@ -75,7 +82,8 @@ SQL_SELECT_COOLER_SETTING = """
   DESC LIMIT 1
 """
 
-# Retrieve all cooler settings to display on webpage
+# Retrieve all cooler settings to display on webpage for page of 
+#   historical settings and desired temperatures with timestamps
 SQL_SELECT_ALL_COOLER_SETTINGS = """
   SELECT *
   FROM cooler_settings
@@ -83,7 +91,8 @@ SQL_SELECT_ALL_COOLER_SETTINGS = """
   DESC LIMIT 2000
 """
 
-# Delete old forecasted data
+# Delete old forecasted data to not fill up database needlessly
+#   old forecasted data is deleted and new data replaces it
 SQL_DELETE_OLD_FORECAST = """
   DELETE FROM forecast
 """
@@ -94,7 +103,8 @@ SQL_INSERT_FORECAST_TEMPERATURE = """
   VALUES (%s, %s)
 """
 
-#  Define a class for holding database entry information
+# Define a class for holding sensor data information for database entry
+#   entries have a sensor id, temperature, humidity, and timestamp
 class SensorData:
   def __init__(self, id="-1", sensor_id="-1", temperature=32.5, humidity=25.7):
     self.id = id
@@ -106,7 +116,7 @@ class SensorData:
 def map_to_object(data):
   sensor_data = SensorData()
   try:
-    # assign database fields to object
+    # assign database fields to SensorData object
     sensor_data.id                      = (data["id"])
     sensor_data.sensor_id               = (data["sensor_id"])
     sensor_data.timestamp               = str(data["timestamp"])
@@ -124,9 +134,10 @@ def map_to_object(data):
 
 # retrieve most recent temp/hum/timestamp data from database
 def getRecentData(sensor_name=""):
-  # creating a connection cursor
+  # create a connection cursor to the database
   mycursor = mysql.new_cursor()
   
+  # get chosen sensor id from database
   if sensor_name == "roof":
     params = (ROOF_SENSOR_ID,)
   elif sensor_name == "home":
@@ -151,7 +162,7 @@ def getRecentData(sensor_name=""):
   data = json.dumps(json_data, indent=4, sort_keys=True, default=str)
   data = json.loads(data)
   
-  # print out all json data entries
+  # print out all json data entries and map to SensorData class object
   for i in range(len(data)):
       #print(data[i])
       sensor_data = map_to_object(data[i])
@@ -163,6 +174,7 @@ def read_sensor_db(sensor_name="", days=2):
   # create new connection cursor
   mycursor = mysql.new_cursor()
 
+  # get chosen sensor id from database
   if sensor_name == "roof":
     params = (ROOF_SENSOR_ID, days,)
   elif sensor_name == "home":
@@ -172,6 +184,7 @@ def read_sensor_db(sensor_name="", days=2):
     print("Specify valid sensor name: 'roof' or 'home'\n")
     return -1
   
+  # validate accurate database retrieval
   if days < 1:
     print("ERROR: Specify number of days for sensor data >1\n")
     return -1
@@ -179,8 +192,8 @@ def read_sensor_db(sensor_name="", days=2):
   # retrieve data from given sensor for given number of days
   mycursor.execute(SQL_SELECT_SENSOR_DATA, params)
   
-  # feed database entries into individual temps/hums/times for plotting
-  # and return these Python lists
+  # feed database entries into individual temps/hums/times lists
+  # for plotting and return these Python lists
   data = mycursor.fetchall()
   dates = []
   temps = []
@@ -192,6 +205,7 @@ def read_sensor_db(sensor_name="", days=2):
   
   return dates, temps, hums
 
+# retrieve current cooler setting and desired temp from database 
 def get_cooler_setting():
     # creating a connection cursor
     mycursor = mysql.new_cursor()
@@ -203,6 +217,7 @@ def get_cooler_setting():
     row_headers = [x[0] for x in mycursor.description] 
     myresult = mycursor.fetchall()
 
+    # convert SQL entry to Python dict object
     json_data = []
     for result in myresult:
         json_data.append(dict(zip(row_headers,result)))
@@ -211,19 +226,25 @@ def get_cooler_setting():
     data = json.loads(data)
     
     return data[0]["setting"], data[0]["desiredTemperature"] 
-    
+
+# plot temperature and humidity plots on website, return png
+# image to display    
 def plot_sensor(data, time, loc='inside', sensor='temperature'):
+    # assign y axis for temperature or humidity
     ys = data
     #print("These are my {} {} values:\n{}".format(loc, sensor, ys))
     
+    # create new subplot
     fig = Figure()
     axis = fig.add_subplot(1, 1, 1)
     
+    # assign y axis label depending on temp or hum
     if sensor == 'temperature':
         axis.set_title("Temperature [°F]")
     else:
         axis.set_title("Humidity [%]")
     
+    # add label, grid, x-axis spacing, other formatting
     axis.set_xlabel("Time")
     axis.grid(True)
     xs = time
@@ -231,32 +252,45 @@ def plot_sensor(data, time, loc='inside', sensor='temperature'):
     axis.tick_params('x', labelrotation=75)
     fig.set_tight_layout(True)
     
+    # convert to image that can be displayed in HTML
     canvas = FigureCanvas(fig)
     output = io.BytesIO()
     canvas.print_png(output)
     
+    # return png image to be displayed
     response = make_response(output.getvalue())
     response.mimetype = 'image/png'
     
     return response
 
-# Insert newest cooler setting to the database
+# insert newest cooler setting to the database
 def write_db(coolerSet, desiredTemperature):
     print("Inserting new cooler setting data...")
     
+    # create new database connection cursor
     mycursor = mysql.new_cursor()
 
+    # provide cooler setting and desired temperature parameters
+    # to SQL query to write to database
     params = (coolerSet, desiredTemperature,)
+    
+    # write settings to database and commit changes
     mycursor.execute(SQL_INSERT_SETTINGS, params)
     mysql.connection.commit()
   
     print("{} record(s) affected".format(mycursor.rowcount))
   
+# delete previous forecasted temperatures from database, then
+# rewrite over entries with newly retrieved forecasted data
 def forecast_temps_db(temperatures, times):
+    # create a connection to database, call SQL query to 
+    # delete old data, commit changes
     mycursor = mysql.new_cursor()
     mycursor.execute(SQL_DELETE_OLD_FORECAST)
     mysql.connection.commit()
     
+    # connect to database, insert all data retrieved from 
+    # weather.gov into forecast database table, commit changes
     i = 0
     for temperature in temperatures:
        mycursor = mysql.new_cursor()
@@ -265,12 +299,16 @@ def forecast_temps_db(temperatures, times):
        mycursor.execute(SQL_INSERT_FORECAST_TEMPERATURE, params)
        mysql.connection.commit()
 
+# plot forecasted data, make displayable in HTML
 def plot_forecast(temperatures, time):
+    # get y axis temperature values
     ys = temperatures
     
+    # create new Python subplot
     fig = Figure(figsize=(9, 4))
     axis = fig.add_subplot(1, 1, 1)
     
+    # set title and axis parameters
     # axis.set_title("Temperature [°F]")
     #axis.set_xlabel("Time")
     axis.grid(True)
@@ -280,10 +318,12 @@ def plot_forecast(temperatures, time):
     axis.xaxis.set_ticks_position('top')
     #fig.set_tight_layout(True)
     
+    # convert to displayable image for website
     canvas = FigureCanvas(fig)
     output = io.BytesIO()
     canvas.print_png(output)
     
+    # return viewable png image for website
     response = make_response(output.getvalue())
     response.mimetype = 'image/png'
     
@@ -508,31 +548,40 @@ def retrieve_forecast_data():
     
     return temperatures, times, upcomingWeekWeatherData, upcomingWeekLength, currentCommonTime, currentTemperature, currentIcon, currentForecast, stringCurrentDate, cityAndState
 
+# return Pi's current IP address or IP address as QR code
 def ip_or_qr(get=None):
     # find current IP address where website is available on network
     stream = os.popen("ifconfig wlan0 | egrep -o 'inet ([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}'")
+    
+    # append "http://" to make QR code link to website immediately across all devices
     ip_addr = "http://" + stream.read()
     
+    # return IP address if specified
     # print("Current IP address: ", ip_addr)
     if get == 'ip':
         return ip_addr
     
-    # make and return QR code image
+    # make and return QR code image if specified
     if get == 'qr':
-        # convert IP address to QR code to display on website, where any phone can scan and connect to it
-        #return qrcode.make(ip_addr)
+        # convert IP address to QR code to display on website, 
+        # where any phone can scan and connect to it
         return qrcode.make(ip_addr)
 
+# main landing page for website: retrieves all values needed from sensors,
+# plots, historical data, forecast, and database to display on website,
+# feeds all of these values into index.html file
 @app.route("/")
 def index():
-    # recent sensor readings
+    # retrieve recent sensor readings from database
     recent_roof_data = SensorData()
     recent_home_data = SensorData()
     recent_roof_data = getRecentData(sensor_name="roof")
     recent_home_data = getRecentData(sensor_name="home")
+    
+    # retrieve current cooler settings from database
     coolerSetting, desiredTemperature = get_cooler_setting()
     
-    # displaying forecast
+    # retrive data for displaying forecast
     temperatures, times, upcomingWeekWeatherData, upcomingWeekLength,\
         currentCommonTime, currentTemperature, currentIcon,\
         currentForecast, currentDate, cityAndState = retrieve_forecast_data()
@@ -540,6 +589,7 @@ def index():
     # retrieve current IP address on network
     ip_addr = ip_or_qr(get='ip')
     
+    # store all required data in dictionary for easy access on index page
     templateData = {
         'time_roof': recent_roof_data.timestamp,
         'temp_roof': recent_roof_data.temperature,
@@ -563,14 +613,22 @@ def index():
         'ip_addr': ip_addr
     }
     
+    # render index template with all of the retrieved data
     return render_template('main/index.html', **templateData)
 
+# main landing page POST for website: retrieves all values needed from sensors,
+# plots, historical data, forecast, and database to display on website,
+# feeds all of these values into index.html file
 @app.route('/', methods=['POST'])
 def my_form_post():
+    # pull POST request
     req_form = dict(request.form)
     coolerSetting = None
     desiredTemperature = None
     
+    # check which submit on website was chosen
+    # retrieve new number of days shown for historical data or
+    # new cooler setting and desired temperature
     if 'numDays' in req_form:
         #print("Setting numDays\n")
         global numDays
@@ -581,14 +639,16 @@ def my_form_post():
         #global coolerSetting
         coolerSetting = request.form.get('coolerSetting')
         desiredTemperature = request.form.get('desiredTemperature')
+        # write new cooler settings to database
         write_db(coolerSetting, desiredTemperature)
-        
+       
+    # retrieve recent sensor readings from database
     recent_roof_data = SensorData()
     recent_home_data = SensorData()
     recent_roof_data = getRecentData(sensor_name="roof")
     recent_home_data = getRecentData(sensor_name="home")
     
-    # displaying forecast
+    # retrieve data for displaying forecast
     temperatures, times, upcomingWeekWeatherData, upcomingWeekLength,\
         currentCommonTime, currentTemperature, currentIcon,\
         currentForecast, currentDate, cityAndState = retrieve_forecast_data()
@@ -596,6 +656,7 @@ def my_form_post():
     # retrieve current IP address on network
     ip_addr = ip_or_qr(get='ip')
     
+    # store all required data in dictionary for easy access on index page
     templateData = {
         'time_roof': recent_roof_data.timestamp,
         'temp_roof': recent_roof_data.temperature,
@@ -619,54 +680,84 @@ def my_form_post():
         'ip_addr': ip_addr
     }
     
+    # render index template with new POST data retrieved
     return render_template('main/index.html', **templateData)
 
+# route for index page to display QR code containing devices IP address
 @app.route('/qr_code')
 def get_qr_code():
+    # retrieve QR code
     qr_code = ip_or_qr(get='qr')
+    
+    # convert QR code to png image viewable on HTML index page
     output = io.BytesIO()
     qr_code.convert('RGBA').save(output, format='PNG')
     output.seek(0, 0)
 
+    # return QR code image to website
     return send_file(output, mimetype='image/png', as_attachment=False)
 
+# route for index page to plot roof temperature plot
 @app.route('/plot/temp_roof')
 def plot_temp_roof():
+    # need global number of days to retrieve number of days in this function
     global numDays
+    
+    # retrieve roof temperature data for given number of days from database
     times, temps, hums = read_sensor_db(sensor_name="roof", days=numDays)
     return plot_sensor(temps, loc='outside', sensor='temperature', time=times)
 
+# route for index page to plot roof humidity plot
 @app.route('/plot/hum_roof')
 def plot_hum_roof():
+    # need global number of days to retrieve number of days in this function
     global numDays
+    
+    # retrieve roof humidity data for given number of days from database
     times, temps, hums = read_sensor_db(sensor_name="roof", days=numDays)
     return plot_sensor(hums, loc='outside', sensor='humidity', time=times)
 
+# route for index page to plot home temperature plot
 @app.route('/plot/temp_home')
 def plot_temp_home():
+    # need global number of days to retrieve number of days in this function
     global numDays
+    
+    # retrieve home temperature data for given number of days from database
     times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
     return plot_sensor(temps, loc='inside', sensor='temperature', time=times)
 
+# route for index page to plot home humidity plot
 @app.route('/plot/hum_home')
 def plot_hum_home():
+    # need global number of days to retrieve number of days in this function
     global numDays
+    
+    # retrieve home humidity data for given number of days from database
     times, temps, hums = read_sensor_db(sensor_name="home", days=numDays)
     return plot_sensor(hums, loc='inside', sensor='humidity', time=times)
 
+# route to display historical cooler settings table
+# displays rows of timestamps with each new cooler setting and desired temperature
 @app.route('/cooler_settings_log')
 def cooler_settings_log():
     # creating a connection cursor
     mycursor = mysql.new_cursor()
-    # get all cooler settings to display
+    
+    # get all historical cooler settings to display
     mycursor.execute(SQL_SELECT_ALL_COOLER_SETTINGS) 
     data = mycursor.fetchall() 
+    
+    # render cooler settings table page
     return render_template('main/cooler_settings_log.html', value=data)
 
+# disable caching so automatic refresh gathers most up-to-date values for 
+# QR code, IP address, sensor readings, and forecasted data
 @app.after_request
 def set_response_headers(response):
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
+    # make caching disabled immediately
     response.headers['Expires'] = '0'
     response.cache_control.max_age = 0
     return response
