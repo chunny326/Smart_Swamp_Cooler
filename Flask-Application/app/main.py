@@ -137,7 +137,7 @@ def getRecentData(sensor_name=""):
   # create a connection cursor to the database
   mycursor = mysql.new_cursor()
   
-  # get chosen sensor id from database
+  # get chosen sensor data based on id from database
   if sensor_name == "roof":
     params = (ROOF_SENSOR_ID,)
   elif sensor_name == "home":
@@ -174,7 +174,7 @@ def read_sensor_db(sensor_name="", days=2):
   # create new connection cursor
   mycursor = mysql.new_cursor()
 
-  # get chosen sensor id from database
+  # get chosen sensor data based on id from database
   if sensor_name == "roof":
     params = (ROOF_SENSOR_ID, days,)
   elif sensor_name == "home":
