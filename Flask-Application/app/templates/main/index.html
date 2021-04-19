@@ -13,16 +13,16 @@
      <h2> devices to same Wifi network as cooler. </h2>
      <h2> Then, scan QR code below to access this page on your phone. </h2>
      <h2> Or type this IP address in any browser search bar: {{ ip_addr }} </h2>
-     <img src="/qr_code" alt="Image Placeholder" width="20%">
+     <img src="/qr_code" alt="Image Placeholder">
   </div>
-  <div class="sensor_data">
+  <div class="sensor_data" style="display: block;">
     <h1> Inside Sensor Data </h1>
     <div id="g3"></div>
     <div id="g4"></div>
     <br>
     <span><a href="/"class="button">{{ time_roof }}</a></span>
   </div>
-  <div class="sensor_data">
+  <div class="sensor_data" style="display: block;">
     <h1> Outside Sensor Data </h1>
     <div id="g1"></div>
     <div id="g2"></div>
@@ -36,16 +36,16 @@
 	<h3>Change Cooler Setting:</h3>
 	    <form method="POST">
   	    <label for="coolerSetting"></label>
-  		<select id="coolerSetting" name="coolerSetting" style="font-size:50px;">
-		    <option value="Off" style="font-size:50px;">Off</option>
-		    <option value="Auto" style="font-size:50px;">Auto</option>
-		    <option value="Fan Hi" style="font-size:50px;">Fan Hi</option>
-		    <option value="Fan Lo" style="font-size:50px;">Fan Lo</option>
-		    <option value="Fan Hi (w/Pump)" style="font-size:50px;">Fan Hi (w/Pump)</option>
-		    <option value="Fan Lo (w/Pump)" style="font-size:50px;">Fan Lo (w/Pump)</option>
-		    <option value="Pump" style="font-size:50px;">Pump</option>
+  		<select id="coolerSetting" name="coolerSetting">
+		    <option value="Off">Off</option>
+		    <option value="Auto">Auto</option>
+		    <option value="Fan Hi">Fan Hi</option>
+		    <option value="Fan Lo">Fan Lo</option>
+		    <option value="Fan Hi (w/Pump)">Fan Hi (w/Pump)</option>
+		    <option value="Fan Lo (w/Pump)">Fan Lo (w/Pump)</option>
+		    <option value="Pump">Pump</option>
 		</select>
-  		<input type="submit" style="font-size:50px;"/>
+  		<input class="coolerSettingSubmit" type="submit"/>
 		<div class="desiredTemperature">
             <h3>Set Auto Temperature (°F):</h3>
 		    <input id="desiredTemp" name="desiredTemperature" type="range" min="55" max="95" step="1" oninput="GetDesiredTemperatureValue(this.value);">
@@ -54,7 +54,7 @@
 	    </form>
 	<br>
 	<form>
-  	    <button formaction="cooler_settings_log" style="font-size:50px;">See Cooler Settings History</button>
+  	    <button class="cooler_settings_log_button" formaction="cooler_settings_log">See Cooler Settings History</button>
 	</form>
 	<br> 
 	<br>
@@ -65,7 +65,7 @@
     <div class='forecastHeader'>
         <div class='currentConditionsLeft'>
             <div class="currentForecast">
-                <img src="{{currentIcon}}" width="100" height="100">
+                <img src="{{currentIcon}}">
             </div>
             <div class="currentTemperature">
                 <h3>{{currentTemperature}}° F</h3>
@@ -78,7 +78,7 @@
         </div>
     </div>
     <div class='forecastCanvas'>
-        <canvas id="forecastChart" width="900" height="300"></canvas>
+        <canvas id="forecastChart" ></canvas>
     </div>
     <div class='upcomingConditions'>
         <div class="firstUpcomingDay">
@@ -102,27 +102,27 @@
 	<h3> Change # of Days: </h3>
 	    <form method="POST">
   	    <label for="numDays"></label>
-  		<select id="numDays" name="numDays" style="font-size:50px;">
-		    <option value="1" style="font-size:50px;">1</option>
-		    <option value="7" style="font-size:50px;">7</option>
-		    <option value="14" style="font-size:50px;">14</option>
-		    <option value="31" style="font-size:50px;">31</option>
+  		<select id="numDays" name="numDays">
+		    <option value="1">1</option>
+		    <option value="7">7</option>
+		    <option value="14">14</option>
+		    <option value="31">31</option>
 		</select>
-  		<input type="submit" style="font-size:50px;">
+  		<input class="numDaysSubmit" type="submit">
 	    </form>
 	<br>
 	<br>
 	<hr>
 	<h3> HISTORICAL OUTSIDE DATA </h3>
 	<hr>
-	<img src="/plot/temp_roof" alt="Image Placeholder" width="49%">
-	<img src="/plot/hum_roof" alt="Image Placeholder" width="49%">
+	<img src="/plot/temp_roof" alt="Image Placeholder">
+	<img src="/plot/hum_roof" alt="Image Placeholder">
 	<h4> Time given as YYYY-MM-DD or MM-DD Military Time for 1-day plot </h4> 
 	<hr>
 	<h3> HISTORICAL INSIDE DATA </h3>
 	<hr>
-	<img src="/plot/temp_home" alt="Image Placeholder" width="49%">
-	<img src="/plot/hum_home" alt="Image Placeholder" width="49%">
+	<img src="/plot/temp_home" alt="Image Placeholder">
+	<img src="/plot/hum_home" alt="Image Placeholder">
 	<h4> Time given as YYYY-MM-DD or MM-DD 24-hour clock for 1-day plot </h4> 
     </div>
     

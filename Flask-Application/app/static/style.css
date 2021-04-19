@@ -125,6 +125,8 @@ canvas{
     padding: 0;
     margin: auto;
     display: block;
+    width: 900px;
+    height: 300px;
 }
 
 .upcomingConditions{
@@ -197,4 +199,194 @@ canvas{
     text-align: center;
     font-size: 1.0em;
     font-weight: bold;
+}
+
+.qr_code img{
+    width: 20%;
+}
+
+option{
+    font-size:50px;
+}
+
+.coolerSettingSubmit{
+    font-size:50px;
+}
+
+.numDaysSubmit{
+    font-size:50px;
+}
+
+.cooler_settings_log_button{
+    font-size: 50px;
+}
+
+.forecastHeader img{
+    width: 100px;
+}
+
+.log_data img{
+    width: 49%;
+}
+
+@media screen and (max-width: 480px)
+{ 
+    body{
+        background: #FFF;
+        padding:1%;
+        font-size: 50px;
+        text-align: center;
+    }
+    
+    .qr_code h2{
+        text-align: center;
+        font-size: 0.4em;
+        font-weight: bold;
+    }
+    
+    .qr_code img{
+        width: 40%;
+    }
+    
+    
+    
+    .sensor_data h1{
+        font-size: 0.7em;
+        font-weight: bold;
+        margin-top: 0.67em;
+    }
+    
+    #g1,
+    #g2,
+    #g3,
+    #g4 {
+        width: 3.2em;
+        height: 2.56em;
+        display: inline-block;
+        margin: 0px;
+    }
+    
+    .sensor_data a{
+        font-size: 0.5em;
+    }
+    
+    .cooler_settings h3{
+        text-align: center;
+        font-size: 0.4em;
+        font-weight: bold;
+        margin-bottom: 1em;
+    }
+    
+    #coolerSetting{
+        width: 50%;
+        height: 1.5em;
+        font-size: 0.4em;
+    }
+    
+    option{
+        font-size: 0.4em;
+    }
+
+    .coolerSettingSubmit{
+        font-size: 0.4em;
+    }
+    
+    #desiredTemperatureValue{
+        font-size: 0.4em;
+        width: 20%;
+    }
+    
+    .cooler_settings_log_button{
+        font-size: 0.4em;
+    }
+
+    .numDaysSubmit{
+        font-size: 0.4em;
+    }
+    
+    .forecast h3{
+        text-align: center;
+        font-size: 0.4em;
+        font-weight: bold;
+    }
+    
+    .forecast img{
+        width: 100%;
+    }
+    
+    .forecast h4{
+        display: block;
+        font-size: 0.22em;
+        font-weight: bold;
+    }
+
+    .forecast p{
+        font-size: 0.22em;
+    }
+    
+    .forecastHeader{
+        display: flex;
+    }
+    
+    .currentConditionsLeft{
+        display: flex;
+        flex: 4;
+    }
+    
+    .currentForecast{
+        display: flex;
+        flex: 6;
+        width: 100%;
+        padding: 0px 0px 15px 0px;
+    }
+    
+    .currentTemperature{
+        flex: 4;
+        width: 100%;
+        text-align: left;
+    }
+    
+    .currentTemperature h3{
+        font-size: 0.3em;
+        font-weight: bold;
+        margin: 0px;
+    }
+    
+    .currentConditionsRight{
+        flex: 6;
+        padding: 0px 5px 0px 0px;
+    }
+    
+    #forecastChart{
+        width: 100%;
+        height: 100%;
+    }
+    
+    .upcomingConditions{
+        display: flex;
+    }
+    
+    .firstUpcomingDay{
+        flex: 1;
+    }
+    
+    .upcomingDay{
+        flex: 1;
+    }
+    
+    .log_data h3{
+        text-align: center;
+        font-size: 0.4em;
+        font-weight: bold;
+    }
+    
+    #numDays{
+        font-size: 0.4em;
+    }
+    
+    .log_data img{
+        width: 100%;
+        height: 100%;
+    }
+    
 }
